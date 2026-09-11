@@ -1,6 +1,5 @@
 """Neftecode Hackathon application."""
 
+from neftecode_hackathon.cli import main
 
-def main() -> None:
-    """Run the application."""
-    print("Neftecode Hackathon")
+__all__ = ["main"]

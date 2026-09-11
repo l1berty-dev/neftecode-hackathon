@@ -1,0 +1,39 @@
+schema_version: 1
+
+sources:
+  telemetry:
+    - path: context/data/242000_tags.csv
+      namespace: ht
+      installation: 24-2000
+    - path: context/data/avt_tags.csv
+      namespace: avt
+      installation: АВТ
+  lims: context/ЛИМСы 01.01.2023 - н.в_.xlsx
+  pak: context/Выгрузка ПАК 01.01.2023 - н.в_.xlsx
+  tag_dictionary: context/Теги_хакатон.xlsx
+
+output_directory: data/processed
+csv:
+  timestamp_column: date
+  timestamp_format: "%Y-%m-%d %H:%M:%S"
+  expected_step_minutes: 10
+  chunksize: 5000
+  service_column_pattern: "^Unnamed:|^$"
+
+parquet:
+  compression: zstd
+
+quality_rules:
+  # Exact 307 values are audited, but are not automatically classified as bad.
+  audit_exact_values: [307]
+  negative_flow:
+    enabled: true
+    issue: negative_flow
+  nonnegative_analytes:
+    - density_d15
+    - sulfur
+    - sulfur_mass_fraction
+    - cetane_number
+  percentage_analytes:
+    - recovery_250
+    - recovery_350
