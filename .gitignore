@@ -213,6 +213,10 @@ tempCodeRunnerFile.py
 # PyPI configuration file
 .pypirc
 
+# Reproducible derivatives are generated locally from context/ source data.
+data/processed/
+artifacts/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

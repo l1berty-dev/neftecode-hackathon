@@ -1,0 +1,23 @@
+contract_version: 1
+
+forecast:
+  horizon_minutes: 60
+  history_minutes: 360
+  random_seed: 42
+
+time:
+  source_timezone: Europe/Moscow
+  storage_timezone: UTC
+
+availability:
+  # Experimental assumptions until the organizers confirm source delivery latency.
+  default_delay_minutes:
+    online: 0
+    pak: 0
+    lims: 0
+  sensitivity_delay_minutes:
+    lims: 120
+  freshness_minutes:
+    online: 20
+    lims: 2880
+

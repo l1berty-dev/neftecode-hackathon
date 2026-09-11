@@ -1,0 +1,843 @@
+{
+  "$defs": {
+    "Action": {
+      "additionalProperties": false,
+      "description": "Alternative next action; changes are absolute current setpoints.",
+      "properties": {
+        "action_id": {
+          "format": "uuid",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/ActionOrigin"
+        },
+        "changes": {
+          "patternProperties": {
+            "^[a-z][a-z0-9_-]*:[^\\s]+$": {
+              "type": "number"
+            }
+          },
+          "title": "Changes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "action_id",
+        "label",
+        "origin"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "ActionOrigin": {
+      "enum": [
+        "baseline",
+        "system",
+        "operator"
+      ],
+      "title": "ActionOrigin",
+      "type": "string"
+    },
+    "Admissibility": {
+      "enum": [
+        "admissible",
+        "rejected",
+        "not_assessable"
+      ],
+      "title": "Admissibility",
+      "type": "string"
+    },
+    "Applicability": {
+      "enum": [
+        "supported",
+        "unsupported",
+        "insufficient_data"
+      ],
+      "title": "Applicability",
+      "type": "string"
+    },
+    "CheckCategory": {
+      "enum": [
+        "data",
+        "quality",
+        "reliability",
+        "control",
+        "applicability"
+      ],
+      "title": "CheckCategory",
+      "type": "string"
+    },
+    "CheckResult": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "minLength": 1,
+          "title": "Code",
+          "type": "string"
+        },
+        "passed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Passed"
+        },
+        "category": {
+          "$ref": "#/$defs/CheckCategory"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "actual": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual"
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Limit"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "code",
+        "passed",
+        "category",
+        "message"
+      ],
+      "title": "CheckResult",
+      "type": "object"
+    },
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "decision_id": {
+          "format": "uuid",
+          "title": "Decision Id",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "format": "uuid",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "horizon_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Horizon Minutes",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/DecisionStatus"
+        },
+        "baseline": {
+          "$ref": "#/$defs/ScenarioEvaluation"
+        },
+        "preferred": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ScenarioEvaluation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alternatives": {
+          "items": {
+            "$ref": "#/$defs/ScenarioEvaluation"
+          },
+          "maxItems": 2,
+          "title": "Alternatives",
+          "type": "array"
+        },
+        "rejected_evaluations": {
+          "items": {
+            "$ref": "#/$defs/ScenarioEvaluation"
+          },
+          "title": "Rejected Evaluations",
+          "type": "array"
+        },
+        "explanation": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Explanation",
+          "type": "array"
+        },
+        "trace": {
+          "items": {
+            "$ref": "#/$defs/TraceEntry"
+          },
+          "title": "Trace",
+          "type": "array"
+        },
+        "dataset_version": {
+          "minLength": 1,
+          "title": "Dataset Version",
+          "type": "string"
+        },
+        "model_version": {
+          "minLength": 1,
+          "title": "Model Version",
+          "type": "string"
+        },
+        "constraint_version": {
+          "minLength": 1,
+          "title": "Constraint Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision_id",
+        "snapshot_id",
+        "horizon_minutes",
+        "status",
+        "baseline",
+        "preferred",
+        "alternatives",
+        "rejected_evaluations",
+        "explanation",
+        "trace",
+        "dataset_version",
+        "model_version",
+        "constraint_version"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "DecisionStatus": {
+      "enum": [
+        "change_recommended",
+        "no_change",
+        "insufficient_data",
+        "no_feasible_option"
+      ],
+      "title": "DecisionStatus",
+      "type": "string"
+    },
+    "EstimateBasis": {
+      "enum": [
+        "measured",
+        "predicted",
+        "proxy",
+        "unavailable"
+      ],
+      "title": "EstimateBasis",
+      "type": "string"
+    },
+    "HistoryRecord": {
+      "additionalProperties": false,
+      "description": "A historical observation included in a snapshot history window.",
+      "properties": {
+        "signal_id": {
+          "pattern": "^[a-z][a-z0-9_-]*:[^\\s]+$",
+          "title": "Signal Id",
+          "type": "string"
+        },
+        "measured_at": {
+          "format": "date-time",
+          "title": "Measured At",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "signal_id",
+        "measured_at",
+        "value"
+      ],
+      "title": "HistoryRecord",
+      "type": "object"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "description": "One value together with its event time, availability, and quality.",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "measured_at": {
+          "format": "date-time",
+          "title": "Measured At",
+          "type": "string"
+        },
+        "available_at": {
+          "format": "date-time",
+          "title": "Available At",
+          "type": "string"
+        },
+        "age_seconds": {
+          "minimum": 0,
+          "title": "Age Seconds",
+          "type": "number"
+        },
+        "quality": {
+          "$ref": "#/$defs/MeasurementQuality"
+        },
+        "issues": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Issues",
+          "type": "array"
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "source",
+        "measured_at",
+        "available_at",
+        "age_seconds",
+        "quality"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "MeasurementQuality": {
+      "enum": [
+        "valid",
+        "suspect",
+        "missing"
+      ],
+      "title": "MeasurementQuality",
+      "type": "string"
+    },
+    "MetricEstimate": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        },
+        "basis": {
+          "$ref": "#/$defs/EstimateBasis"
+        },
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "lower": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lower"
+        },
+        "upper": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Upper"
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "basis",
+        "explanation"
+      ],
+      "title": "MetricEstimate",
+      "type": "object"
+    },
+    "ProcessSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Contract Version",
+          "type": "integer"
+        },
+        "snapshot_id": {
+          "format": "uuid",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/SnapshotMode"
+        },
+        "dataset_version": {
+          "minLength": 1,
+          "title": "Dataset Version",
+          "type": "string"
+        },
+        "values": {
+          "patternProperties": {
+            "^[a-z][a-z0-9_-]*:[^\\s]+$": {
+              "$ref": "#/$defs/Measurement"
+            }
+          },
+          "title": "Values",
+          "type": "object"
+        },
+        "history": {
+          "items": {
+            "$ref": "#/$defs/HistoryRecord"
+          },
+          "title": "History",
+          "type": "array"
+        },
+        "issues": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Issues",
+          "type": "array"
+        },
+        "completeness": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Completeness",
+          "type": "number"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "as_of",
+        "mode",
+        "dataset_version",
+        "values",
+        "history",
+        "completeness"
+      ],
+      "title": "ProcessSnapshot",
+      "type": "object"
+    },
+    "QualityAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        },
+        "forecast_at": {
+          "format": "date-time",
+          "title": "Forecast At",
+          "type": "string"
+        },
+        "prediction": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Prediction"
+        },
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "lower": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lower"
+        },
+        "upper": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Upper"
+        },
+        "interval_coverage_target": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Interval Coverage Target"
+        },
+        "applicability": {
+          "$ref": "#/$defs/Applicability"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "model_version": {
+          "minLength": 1,
+          "title": "Model Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target",
+        "forecast_at",
+        "prediction",
+        "unit",
+        "lower",
+        "upper",
+        "interval_coverage_target",
+        "applicability",
+        "reasons",
+        "model_version"
+      ],
+      "title": "QualityAssessment",
+      "type": "object"
+    },
+    "ReliabilityAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "severity_index": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Severity Index"
+        },
+        "factors": {
+          "items": {
+            "$ref": "#/$defs/ReliabilityFactor"
+          },
+          "title": "Factors",
+          "type": "array"
+        },
+        "transition_assessed": {
+          "title": "Transition Assessed",
+          "type": "boolean"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "severity_index",
+        "factors",
+        "transition_assessed",
+        "limitations"
+      ],
+      "title": "ReliabilityAssessment",
+      "type": "object"
+    },
+    "ReliabilityFactor": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "contribution": {
+          "title": "Contribution",
+          "type": "number"
+        },
+        "explanation": {
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "contribution",
+        "explanation"
+      ],
+      "title": "ReliabilityFactor",
+      "type": "object"
+    },
+    "ScenarioEvaluation": {
+      "additionalProperties": false,
+      "properties": {
+        "evaluation_id": {
+          "format": "uuid",
+          "title": "Evaluation Id",
+          "type": "string"
+        },
+        "snapshot_id": {
+          "format": "uuid",
+          "title": "Snapshot Id",
+          "type": "string"
+        },
+        "horizon_minutes": {
+          "exclusiveMinimum": 0,
+          "title": "Horizon Minutes",
+          "type": "integer"
+        },
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "quality": {
+          "$ref": "#/$defs/QualityAssessment"
+        },
+        "reliability": {
+          "$ref": "#/$defs/ReliabilityAssessment"
+        },
+        "throughput": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "cost": {
+          "$ref": "#/$defs/MetricEstimate"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/CheckResult"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "admissibility": {
+          "$ref": "#/$defs/Admissibility"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "model_version": {
+          "minLength": 1,
+          "title": "Model Version",
+          "type": "string"
+        },
+        "constraint_version": {
+          "minLength": 1,
+          "title": "Constraint Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evaluation_id",
+        "snapshot_id",
+        "horizon_minutes",
+        "action",
+        "quality",
+        "reliability",
+        "throughput",
+        "cost",
+        "checks",
+        "admissibility",
+        "reasons",
+        "model_version",
+        "constraint_version"
+      ],
+      "title": "ScenarioEvaluation",
+      "type": "object"
+    },
+    "SnapshotMode": {
+      "enum": [
+        "replay",
+        "manual"
+      ],
+      "title": "SnapshotMode",
+      "type": "string"
+    },
+    "TraceEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "input_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Input Ids",
+          "type": "array"
+        },
+        "output_summary": {
+          "minLength": 1,
+          "title": "Output Summary",
+          "type": "string"
+        },
+        "check_codes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Check Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "role",
+        "input_ids",
+        "output_summary"
+      ],
+      "title": "TraceEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Versioned wrapper used only to exchange the common synthetic fixture.",
+  "properties": {
+    "contract_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Contract Version",
+      "type": "integer"
+    },
+    "synthetic": {
+      "const": true,
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "disclaimer": {
+      "minLength": 1,
+      "title": "Disclaimer",
+      "type": "string"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/ProcessSnapshot"
+    },
+    "action": {
+      "$ref": "#/$defs/Action"
+    },
+    "evaluation": {
+      "$ref": "#/$defs/ScenarioEvaluation"
+    },
+    "decision": {
+      "$ref": "#/$defs/Decision"
+    }
+  },
+  "required": [
+    "synthetic",
+    "disclaimer",
+    "snapshot",
+    "action",
+    "evaluation",
+    "decision"
+  ],
+  "title": "ContractExample",
+  "type": "object"
+}

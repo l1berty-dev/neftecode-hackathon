@@ -1,0 +1,353 @@
+{
+  "contract_version": 1,
+  "synthetic": true,
+  "disclaimer": "Synthetic integration fixture only. Values and changes are not verified industrial setpoints.",
+  "snapshot": {
+    "contract_version": 1,
+    "snapshot_id": "11111111-1111-4111-8111-111111111111",
+    "as_of": "2026-01-15T09:00:00Z",
+    "mode": "replay",
+    "dataset_version": "synthetic-v1",
+    "values": {
+      "ht:F26": {
+        "value": 250.0,
+        "unit": "m3/h",
+        "source": "synthetic-telemetry",
+        "measured_at": "2026-01-15T08:50:00Z",
+        "available_at": "2026-01-15T08:50:00Z",
+        "age_seconds": 600.0,
+        "quality": "valid",
+        "issues": []
+      },
+      "pak:ht.product_sulfur": {
+        "value": 8.4,
+        "unit": "mg/kg",
+        "source": "synthetic-pak",
+        "measured_at": "2026-01-15T08:50:00Z",
+        "available_at": "2026-01-15T08:50:00Z",
+        "age_seconds": 600.0,
+        "quality": "valid",
+        "issues": []
+      },
+      "lab:ht.product_sulfur": {
+        "value": 8.1,
+        "unit": "mg/kg",
+        "source": "synthetic-lims",
+        "measured_at": "2026-01-14T08:00:00Z",
+        "available_at": "2026-01-14T10:00:00Z",
+        "age_seconds": 90000.0,
+        "quality": "valid",
+        "issues": []
+      }
+    },
+    "history": [
+      {
+        "signal_id": "ht:F26",
+        "measured_at": "2026-01-15T08:40:00Z",
+        "value": 249.0
+      },
+      {
+        "signal_id": "ht:F26",
+        "measured_at": "2026-01-15T08:50:00Z",
+        "value": 250.0
+      },
+      {
+        "signal_id": "pak:ht.product_sulfur",
+        "measured_at": "2026-01-15T08:50:00Z",
+        "value": 8.4
+      }
+    ],
+    "issues": [],
+    "completeness": 1.0
+  },
+  "action": {
+    "action_id": "22222222-2222-4222-8222-222222222222",
+    "label": "Synthetic small feed change",
+    "origin": "system",
+    "changes": {
+      "ht:F26": 252.0
+    }
+  },
+  "evaluation": {
+    "evaluation_id": "33333333-3333-4333-8333-333333333333",
+    "snapshot_id": "11111111-1111-4111-8111-111111111111",
+    "horizon_minutes": 60,
+    "action": {
+      "action_id": "22222222-2222-4222-8222-222222222222",
+      "label": "Synthetic small feed change",
+      "origin": "system",
+      "changes": {
+        "ht:F26": 252.0
+      }
+    },
+    "quality": {
+      "target": "ht.product_sulfur",
+      "forecast_at": "2026-01-15T10:00:00Z",
+      "prediction": 7.8,
+      "unit": "mg/kg",
+      "lower": 6.1,
+      "upper": 9.5,
+      "interval_coverage_target": 0.9,
+      "applicability": "supported",
+      "reasons": [
+        "Synthetic model response for contract integration only."
+      ],
+      "model_version": "synthetic-model-v1"
+    },
+    "reliability": {
+      "severity_index": 0.31,
+      "factors": [
+        {
+          "name": "synthetic_mode_severity",
+          "contribution": 0.31,
+          "explanation": "Synthetic proxy; this is not an accident probability."
+        }
+      ],
+      "transition_assessed": false,
+      "limitations": [
+        "Transition dynamics are not assessed in this synthetic fixture."
+      ]
+    },
+    "throughput": {
+      "value": 252.0,
+      "unit": "m3/h",
+      "basis": "predicted",
+      "explanation": "Synthetic steady-setting assumption.",
+      "lower": null,
+      "upper": null
+    },
+    "cost": {
+      "value": 1.03,
+      "unit": "relative index",
+      "basis": "proxy",
+      "explanation": "Synthetic comparison proxy; no actual price data are used.",
+      "lower": null,
+      "upper": null
+    },
+    "checks": [
+      {
+        "code": "DATA_FRESH",
+        "passed": true,
+        "category": "data",
+        "message": "Synthetic required inputs are fresh.",
+        "actual": 10.0,
+        "limit": 20.0,
+        "unit": "min"
+      },
+      {
+        "code": "QUALITY_SULFUR_LIMIT",
+        "passed": true,
+        "category": "quality",
+        "message": "Synthetic forecast upper bound does not exceed the selected limit.",
+        "actual": 9.5,
+        "limit": 10.0,
+        "unit": "mg/kg"
+      }
+    ],
+    "admissibility": "admissible",
+    "reasons": [],
+    "model_version": "synthetic-model-v1",
+    "constraint_version": "synthetic-constraints-v1"
+  },
+  "decision": {
+    "decision_id": "44444444-4444-4444-8444-444444444444",
+    "snapshot_id": "11111111-1111-4111-8111-111111111111",
+    "horizon_minutes": 60,
+    "status": "change_recommended",
+    "baseline": {
+      "evaluation_id": "55555555-5555-4555-8555-555555555555",
+      "snapshot_id": "11111111-1111-4111-8111-111111111111",
+      "horizon_minutes": 60,
+      "action": {
+        "action_id": "66666666-6666-4666-8666-666666666666",
+        "label": "Keep current settings",
+        "origin": "baseline",
+        "changes": {}
+      },
+      "quality": {
+        "target": "ht.product_sulfur",
+        "forecast_at": "2026-01-15T10:00:00Z",
+        "prediction": 9.4,
+        "unit": "mg/kg",
+        "lower": 7.7,
+        "upper": 11.1,
+        "interval_coverage_target": 0.9,
+        "applicability": "supported",
+        "reasons": [
+          "Synthetic baseline forecast for contract integration only."
+        ],
+        "model_version": "synthetic-model-v1"
+      },
+      "reliability": {
+        "severity_index": 0.28,
+        "factors": [
+          {
+            "name": "synthetic_mode_severity",
+            "contribution": 0.28,
+            "explanation": "Synthetic proxy; this is not an accident probability."
+          }
+        ],
+        "transition_assessed": false,
+        "limitations": [
+          "Transition dynamics are not assessed in this synthetic fixture."
+        ]
+      },
+      "throughput": {
+        "value": 250.0,
+        "unit": "m3/h",
+        "basis": "measured",
+        "explanation": "Synthetic current measured value.",
+        "lower": null,
+        "upper": null
+      },
+      "cost": {
+        "value": 1.0,
+        "unit": "relative index",
+        "basis": "proxy",
+        "explanation": "Synthetic baseline for relative comparison.",
+        "lower": null,
+        "upper": null
+      },
+      "checks": [
+        {
+          "code": "DATA_FRESH",
+          "passed": true,
+          "category": "data",
+          "message": "Synthetic required inputs are fresh.",
+          "actual": 10.0,
+          "limit": 20.0,
+          "unit": "min"
+        },
+        {
+          "code": "QUALITY_SULFUR_LIMIT",
+          "passed": false,
+          "category": "quality",
+          "message": "Synthetic forecast upper bound exceeds the selected limit.",
+          "actual": 11.1,
+          "limit": 10.0,
+          "unit": "mg/kg"
+        }
+      ],
+      "admissibility": "rejected",
+      "reasons": [
+        "Synthetic quality constraint is not satisfied."
+      ],
+      "model_version": "synthetic-model-v1",
+      "constraint_version": "synthetic-constraints-v1"
+    },
+    "preferred": {
+      "evaluation_id": "33333333-3333-4333-8333-333333333333",
+      "snapshot_id": "11111111-1111-4111-8111-111111111111",
+      "horizon_minutes": 60,
+      "action": {
+        "action_id": "22222222-2222-4222-8222-222222222222",
+        "label": "Synthetic small feed change",
+        "origin": "system",
+        "changes": {
+          "ht:F26": 252.0
+        }
+      },
+      "quality": {
+        "target": "ht.product_sulfur",
+        "forecast_at": "2026-01-15T10:00:00Z",
+        "prediction": 7.8,
+        "unit": "mg/kg",
+        "lower": 6.1,
+        "upper": 9.5,
+        "interval_coverage_target": 0.9,
+        "applicability": "supported",
+        "reasons": [
+          "Synthetic model response for contract integration only."
+        ],
+        "model_version": "synthetic-model-v1"
+      },
+      "reliability": {
+        "severity_index": 0.31,
+        "factors": [
+          {
+            "name": "synthetic_mode_severity",
+            "contribution": 0.31,
+            "explanation": "Synthetic proxy; this is not an accident probability."
+          }
+        ],
+        "transition_assessed": false,
+        "limitations": [
+          "Transition dynamics are not assessed in this synthetic fixture."
+        ]
+      },
+      "throughput": {
+        "value": 252.0,
+        "unit": "m3/h",
+        "basis": "predicted",
+        "explanation": "Synthetic steady-setting assumption.",
+        "lower": null,
+        "upper": null
+      },
+      "cost": {
+        "value": 1.03,
+        "unit": "relative index",
+        "basis": "proxy",
+        "explanation": "Synthetic comparison proxy; no actual price data are used.",
+        "lower": null,
+        "upper": null
+      },
+      "checks": [
+        {
+          "code": "DATA_FRESH",
+          "passed": true,
+          "category": "data",
+          "message": "Synthetic required inputs are fresh.",
+          "actual": 10.0,
+          "limit": 20.0,
+          "unit": "min"
+        },
+        {
+          "code": "QUALITY_SULFUR_LIMIT",
+          "passed": true,
+          "category": "quality",
+          "message": "Synthetic forecast upper bound does not exceed the selected limit.",
+          "actual": 9.5,
+          "limit": 10.0,
+          "unit": "mg/kg"
+        }
+      ],
+      "admissibility": "admissible",
+      "reasons": [],
+      "model_version": "synthetic-model-v1",
+      "constraint_version": "synthetic-constraints-v1"
+    },
+    "alternatives": [],
+    "rejected_evaluations": [],
+    "explanation": [
+      "Synthetic preferred scenario satisfies the selected quality check while the baseline does not."
+    ],
+    "trace": [
+      {
+        "role": "quality",
+        "input_ids": [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222"
+        ],
+        "output_summary": "Synthetic quality forecast produced.",
+        "check_codes": [
+          "DATA_FRESH",
+          "QUALITY_SULFUR_LIMIT"
+        ]
+      },
+      {
+        "role": "coordinator",
+        "input_ids": [
+          "55555555-5555-4555-8555-555555555555",
+          "33333333-3333-4333-8333-333333333333"
+        ],
+        "output_summary": "Synthetic admissible scenario selected.",
+        "check_codes": [
+          "QUALITY_SULFUR_LIMIT"
+        ]
+      }
+    ],
+    "dataset_version": "synthetic-v1",
+    "model_version": "synthetic-model-v1",
+    "constraint_version": "synthetic-constraints-v1"
+  }
+}
