@@ -227,9 +227,9 @@ def load_policy(
     """Read explicit files with safe YAML and validate without touching DB/model/data."""
     return ScenarioPolicy(
         catalogue=ControlCatalogue.model_validate(
-            yaml.load(controls_path.read_text(), Loader=UniqueKeyLoader)
+            yaml.load(controls_path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
         ),
         constraints=Constraints.model_validate(
-            yaml.load(constraints_path.read_text(), Loader=UniqueKeyLoader)
+            yaml.load(constraints_path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
         ),
     )

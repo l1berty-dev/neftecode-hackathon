@@ -86,7 +86,7 @@ def test_lims_pairs_are_independent_and_text_becomes_event(tmp_path: Path) -> No
     workbook.save(path)
 
     analyses, events, dictionary, audit = load_lims(
-        path, source_timezone="Europe/Moscow", delay_minutes=120
+        path, source_timezone="Europe/Moscow", delay_minutes=240
     )
 
     assert set(analyses["signal_id"]) == {
@@ -95,14 +95,18 @@ def test_lims_pairs_are_independent_and_text_becomes_event(tmp_path: Path) -> No
     }
     sulfur = analyses.loc[analyses["signal_id"] == "lab:ht.point_2.sulfur"].iloc[0]
     assert sulfur["measured_at"] == datetime(2026, 1, 1, 7, tzinfo=UTC)
-    assert sulfur["available_at"] == datetime(2026, 1, 1, 9, tzinfo=UTC)
+    assert sulfur["available_at"] == datetime(2026, 1, 1, 11, tzinfo=UTC)
     assert events.iloc[0]["raw_value"] == "Pt Created"
     assert events.iloc[0]["event_type"] == "source_text"
     density_dictionary = next(
         item for item in dictionary if item["signal_id"] == "lab:ht.point_2.density_d15"
     )
-    assert density_dictionary["verification_status"] == "suspect"
-    assert density_dictionary["canonical_unit"] is None
+    assert density_dictionary["verification_status"] == "organizer_confirmed_unit_correction"
+    assert density_dictionary["canonical_unit"] == "kg/m³"
+    density = analyses.loc[analyses["signal_id"] == "lab:ht.point_2.density_d15"].iloc[0]
+    assert density["quality"] == "valid"
+    assert density["original_unit"] == "°С"
+    assert density["issues"] == '["source_unit_corrected_from_analyte"]'
     assert audit[0]["count_matches_declared"] is True
 
 

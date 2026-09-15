@@ -390,13 +390,30 @@ def test_invalid_configuration_is_rejected(setup, damage):
 def test_loader_rejects_duplicate_keys_and_unsafe_yaml(tmp_path):
     controls = tmp_path / "controls.yaml"
     constraints = tmp_path / "constraints.yaml"
-    constraints.write_text(Path("config/constraints.yaml").read_text())
-    controls.write_text("constraint_version: a\nconstraint_version: b\ncontrols: []\n")
+    constraints.write_text(
+        Path("config/constraints.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    controls.write_text(
+        "constraint_version: a\nconstraint_version: b\ncontrols: []\n", encoding="utf-8"
+    )
     with pytest.raises(ValueError, match="Duplicate YAML key"):
         load_policy(controls, constraints)
-    controls.write_text("!!python/object/apply:os.system ['false']")
+    controls.write_text("!!python/object/apply:os.system ['false']", encoding="utf-8")
     with pytest.raises(yaml.constructor.ConstructorError):
         load_policy(controls, constraints)
+
+
+def test_loader_reads_utf8_policy_on_windows(tmp_path):
+    controls = tmp_path / "controls.yaml"
+    constraints = tmp_path / "constraints.yaml"
+    controls.write_text(Path("config/controls.yaml").read_text(encoding="utf-8"), encoding="utf-8")
+    constraints.write_text(
+        Path("config/constraints.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+
+    policy = load_policy(controls, constraints)
+
+    assert policy.catalogue.controls[0].name == "Полисеп. Р-202. Температура ГСС на входе"
 
 
 @pytest.mark.parametrize(

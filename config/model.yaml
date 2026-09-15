@@ -10,14 +10,15 @@ time:
   storage_timezone: UTC
 
 availability:
-  # Experimental assumptions until the organizers confirm source delivery latency.
+  # LIMS timestamp is sample time; use the organizer-confirmed conservative upper delay.
   default_delay_minutes:
     online: 0
     pak: 0
-    lims: 0
+    lims: 240
   sensitivity_delay_minutes:
+    # Explicitly experimental shorter replay assumption, never the default dataset.
     lims: 120
   freshness_minutes:
     online: 20
+    pak: 20
     lims: 2880
-

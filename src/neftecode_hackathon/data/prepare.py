@@ -21,7 +21,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import yaml
 
-PREPARATION_CODE_VERSION = "data-preparation-v1"
+PREPARATION_CODE_VERSION = "data-preparation-v2"
 
 TELEMETRY_COLUMNS = (
     "signal_id",
@@ -112,6 +112,16 @@ UNIT_NORMALIZATION = {
     "мг/кг": ("mass_concentration", "mg/kg", "identity"),
     "ед.цет.ч.": ("cetane_number", "cetane number", "identity"),
     "ppm": ("mass_concentration", "mg/kg", "1 mass ppm = 1 mg/kg (assumption)"),
+}
+
+# The source LIMS unit row is known to contain these four shifted/wrong labels.
+# Values are not rescaled: only the unit label is corrected from the analyte name,
+# with both the original label and the correction evidence retained downstream.
+LIMS_UNIT_CORRECTIONS = {
+    "D15": ("density", "kg/m³"),
+    "EBP.T": ("temperature", "°C"),
+    "50%.T": ("temperature", "°C"),
+    "I350": ("volume_fraction", "% vol."),
 }
 
 TELEMETRY_SCHEMA = pa.schema(
@@ -231,7 +241,19 @@ def _series_metadata(
     canonical_unit: str | None = None
     conversion = "none"
     verification_status = "unverified"
-    if unit_info is None:
+    correction = LIMS_UNIT_CORRECTIONS.get(source_label)
+    if correction is not None and (unit_info is None or unit_info[0] != expected_kind):
+        corrected_kind, canonical_unit = correction
+        if expected_kind is not None and corrected_kind != expected_kind:
+            raise ValueError(f"invalid LIMS unit correction for {source_label!r}")
+        issues.append("source_unit_corrected_from_analyte")
+        conversion = "unit label corrected from analyte; numeric value unchanged"
+        verification_status = "organizer_confirmed_unit_correction"
+        evidence = (
+            f"{evidence}; docs/ORGANIZER_CLARIFICATIONS.md section 1 "
+            "(organizer instruction to infer LIMS units from analyte names)"
+        )
+    elif unit_info is None:
         issues.append("unknown_unit")
     elif expected_kind is not None and unit_info[0] != expected_kind:
         issues.append("unit_mismatch")
@@ -272,7 +294,8 @@ def _value_quality(
         issues.append("negative_nonnegative_quantity")
     if analyte in percentage_analytes and not 0 <= value <= 100:
         issues.append("percentage_out_of_range")
-    return ("suspect" if issues else "valid", _json_issues(issues))
+    blocking_issues = [issue for issue in issues if issue != "source_unit_corrected_from_analyte"]
+    return ("suspect" if blocking_issues else "valid", _json_issues(issues))
 
 
 def load_lims(
@@ -619,8 +642,11 @@ def _telemetry_dictionary_entries(
 ) -> list[dict[str, Any]]:
     entries = []
     for column in columns:
-        status = "suspect" if namespace == "ht" and column in {"T6", "P8"} else "unverified"
-        evidence = f"context/Теги_хакатон.xlsx!КИП and {source_path.as_posix()}:{column}"
+        status = "mapping_confirmed_unit_unverified"
+        evidence = (
+            f"context/Теги_хакатон.xlsx!КИП and {source_path.as_posix()}:{column}; "
+            "docs/ORGANIZER_CLARIFICATIONS.md section 1"
+        )
         entries.append(
             {
                 "source": "telemetry",
@@ -1009,11 +1035,13 @@ def prepare_data(
             "candidate_status": (
                 "eligible_for_review"
                 if item["verification_status"].startswith("source_verified")
+                or item["verification_status"] == "organizer_confirmed_unit_correction"
                 else "requires_verification"
             ),
             "reason": (
                 "Source label and unit are compatible; model relevance is not yet established."
                 if item["verification_status"].startswith("source_verified")
+                or item["verification_status"] == "organizer_confirmed_unit_correction"
                 else "Meaning or unit must be verified before physical calculations."
             ),
         }
@@ -1065,7 +1093,7 @@ def prepare_data(
             "kind": "prepared_telemetry_state",
             "synthetic": False,
             "snapshot_contract_ready": False,
-            "note": "Prepared real state for handoff; ProcessSnapshot is implemented in route C.",
+            "note": "Diagnostic prepared state only; use SnapshotProvider for ProcessSnapshot.",
             "mode": "replay",
             "as_of": telemetry_max.isoformat() if telemetry_max else None,
             "dataset_version": dataset_version,
@@ -1099,6 +1127,10 @@ def prepare_data(
             "storage_timezone": model_config["time"]["storage_timezone"],
             "default_delay_minutes": delays,
             "lims_delay_sensitivity_minutes": sensitivity_minutes,
+            "lims_default_delay_basis": (
+                "Conservative organizer-confirmed publication upper bound; "
+                "LIMS timestamp is sample time."
+            ),
             "exact_307_policy": "counted_for_audit_only; not automatically invalid",
         },
         "outputs": {
@@ -1121,7 +1153,10 @@ def prepare_data(
             ),
             "records_with_shifted_available_at": len(lims),
             "availability_shift_minutes": sensitivity_minutes,
-            "interpretation": "Experimental availability shift, not a confirmed laboratory delay.",
+            "interpretation": (
+                "Experimental shorter delay compared with the conservative 240-minute default; "
+                "not used in the prepared dataset."
+            ),
         },
     }
     _write_json(output_dir / "audit_report.json", audit_report)
