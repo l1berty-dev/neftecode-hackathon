@@ -3,6 +3,9 @@
 from typing import Protocol
 
 from neftecode_hackathon.contracts import Action, ProcessSnapshot, ReliabilityAssessment
+from neftecode_hackathon.reliability.proxy import SeverityProxyAgent
+
+__all__ = ["ReliabilityAgent", "SeverityProxyAgent", "UnavailableReliabilityAgent"]
 
 
 class ReliabilityAgent(Protocol):

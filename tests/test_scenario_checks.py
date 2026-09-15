@@ -471,8 +471,36 @@ def test_coordinator_does_not_mislabel_feasible_options(setup):
         model_version=example.evaluation.model_version,
         policy=ScenarioPolicy.model_validate(setup[2]),
     )
-    with pytest.raises(NotImplementedError, match="C–E"):
+    with pytest.raises(NotImplementedError, match="D–E"):
         Coordinator(evaluator).decide(ProcessSnapshot.model_validate(setup[1]))
+
+
+def test_c_proxy_integrates_without_fabricating_efficiency(setup):
+    from neftecode_hackathon.reliability import SeverityProxyAgent
+    from neftecode_hackathon.scenarios.config import SeverityPolicy, load_severity_policy
+
+    severity = load_severity_policy().model_dump()
+    for factor, control in zip(severity["factors"], setup[2]["catalogue"]["controls"], strict=True):
+        factor.update(
+            unit=control["canonical_unit"],
+            unit_verified=True,
+            minimum=control["model_min"],
+            maximum=control["model_max"],
+            provenance=control["provenance"],
+        )
+    evaluator = ScenarioEvaluator(
+        TestQualityAgent(setup[0].evaluation.quality),
+        SeverityProxyAgent(SeverityPolicy.model_validate(severity)),
+        model_version=setup[0].evaluation.model_version,
+        policy=ScenarioPolicy.model_validate(setup[2]),
+    )
+    candidate = setup[0].action.model_copy(update={"changes": {"ht:P8": 160.0}})
+    result = evaluator.evaluate(ProcessSnapshot.model_validate(setup[1]), candidate)
+    assert result.reliability.severity_index is not None
+    assert len(result.reliability.factors) == 3
+    assert not result.reliability.transition_assessed
+    assert result.throughput.value is result.cost.value is None
+    assert result.admissibility is Admissibility.ADMISSIBLE
 
 
 def test_future_measurement_in_unvalidated_snapshot_is_rejected(setup):

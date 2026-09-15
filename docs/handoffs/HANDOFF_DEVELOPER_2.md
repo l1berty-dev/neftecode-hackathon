@@ -30,14 +30,16 @@
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare и SnapshotProvider; train, evaluate, serve пока только план.
-- Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support. Coordinator ещё не ранжирует допустимые варианты (C–E) и явно сообщает об этом вместо ложного no_feasible_option.
+- Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support. Coordinator ещё не ранжирует допустимые варианты (D–E) и явно сообщает об этом вместо ложного no_feasible_option.
+- Этап C разработчика 2 реализован: SeverityProxyAgent с конфигурацией факторов P8/T11/F19, прозрачной нормировкой/вкладами и provenance; current_throughput отдельно от будущей эффективности. Реальные единицы/нормировки не утверждены, поэтому численный индекс и выпуск остаются неизвестными. Будущие выпуск/затраты null/unavailable, переход не оценён. Подробнее: [SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md).
 - Есть compose.yaml (PostgreSQL 17), Alembic 0001, ORM, SnapshotRepository и DecisionRepository. Миграция, FK, rollback, идемпотентность save, JSON/TIMESTAMPTZ и reconnect проверены на отдельном временном PostgreSQL. Replay repository/advance и сервис API ещё не реализованы.
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
 - Реальной модели, маршрутов FastAPI/OpenAPI и frontend пока нет. SnapshotProvider реализован;
-  локальные Git-ignored производные данные пересобраны и воспроизводятся командой `prepare`.
-- Последние проверки после исправления B и реализации SnapshotProvider: Ruff check/format
-  --check прошли; pytest — 92 passed, 2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен
-  отдельно: 2 passed; БД/миграции в изменениях разработчика 1 не менялись.
+  производные данные воспроизводятся командой `prepare`; в checkout при выполнении C
+  `data/processed/` отсутствует. Реальный smoke первого разработчика — историческая проверка.
+- Последние проверки после C: Ruff check/format --check прошли; pytest — 122 passed,
+  2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
+  БД/миграции в C не менялись и повторно не запускались.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
 - Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
@@ -372,6 +374,26 @@ SnapshotProvider и агент качества; последующее факт
 support; SnapshotProvider сам эти подтверждения не создаёт.
 
 ### C. Агент надёжности и показатели эффективности
+
+Статус на 2026-09-15: техническая часть выполнена. Реализованы
+`reliability/proxy.py`, валидируемые `config/severity.yaml` и
+`config/throughput.yaml`, обычные функции `scenarios/efficiency.py`; будущие
+метрики подключены к общему evaluator. Текущие/сценарные значения, нормировка,
+веса, вклады и источник сохраняются в explanation существующего контрактного
+фактора, неизвестные — в limitations. Полный индекс не формируется из частичных
+вкладов. Переход всегда не оценён; промышленные ограничения не выдуманы.
+
+Численные реальные оценки пока не включены: единицы/шкалы и train-нормировки
+не переданы, модели отклика выпуска и цен нет. Это явный отказ, не synthetic
+fallback. Реальный smoke не запускался: `data/processed/` в текущем checkout
+отсутствует. Проверены 29 новых C-тестов и сквозной тест evaluator; полный
+pytest 122 passed, 2 skipped, Ruff check/format --check прошли. БД и контракт
+не менялись. Формулы, ограничения и пример интеграции:
+[SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md).
+
+Следующий шаг — собственный этап D, затем E; для реальной численной активации
+по-прежнему требуется совместная передача модели/manifest, шкал и нормировок.
+Исходные требования C ниже сохранены как критерии приёмки.
 
 1. По подтверждённым сигналам выбрать показатели тяжести. Связь с оборудованием описать рядом с формулой.
 2. Для каждого фактора хранить текущую/сценарную величину, нормировку, вклад. Если используются исторические нормировки, получать их только из train.

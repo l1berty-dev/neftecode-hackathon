@@ -1,6 +1,7 @@
 """Validated internal policy, not a second set of public contract DTOs."""
 
 from datetime import datetime
+from math import isfinite
 from pathlib import Path
 from typing import Annotated, Literal, Self
 
@@ -202,6 +203,64 @@ class ScenarioPolicy(PolicyModel):
         return self
 
 
+class SeverityFactorPolicy(PolicyModel):
+    signal_id: Literal["ht:P8", "ht:T11", "ht:F19"]
+    name: NonEmptyText
+    equipment_relation: NonEmptyText
+    evidence: NonEmptyText
+    unit: NonEmptyText | None
+    unit_verified: StrictBool = False
+    minimum: Number | None = None
+    maximum: Number | None = None
+    weight: Positive
+    provenance: RangeProvenance | None = None
+    max_age_seconds: Positive = 1200
+
+    @model_validator(mode="after")
+    def validate_normalization(self) -> Self:
+        if (self.minimum is None) != (self.maximum is None):
+            raise ValueError("Severity normalization requires both bounds")
+        if self.minimum is not None:
+            if (
+                self.minimum >= self.maximum
+                or not isfinite(self.maximum - self.minimum)
+                or self.provenance is None
+            ):
+                raise ValueError("Severity bounds must increase and have provenance")
+        if self.unit_verified and self.unit is None:
+            raise ValueError("Verified severity units cannot be unknown")
+        return self
+
+
+class SeverityPolicy(PolicyModel):
+    version: NonEmptyText
+    factors: tuple[SeverityFactorPolicy, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_factors(self) -> Self:
+        if len({f.signal_id for f in self.factors}) != len(self.factors):
+            raise ValueError("Duplicate severity factors")
+        if abs(sum(f.weight for f in self.factors) - 1) > 1e-9:
+            raise ValueError("Severity weights must sum to one")
+        return self
+
+
+class ThroughputPolicy(PolicyModel):
+    version: NonEmptyText
+    signal_id: Literal["ht:F17"] = "ht:F17"
+    evidence: NonEmptyText
+    unit: NonEmptyText | None = None
+    unit_verified: StrictBool = False
+    provenance: RangeProvenance | None = None
+    max_age_seconds: Positive = 1200
+
+    @model_validator(mode="after")
+    def validate_unit(self) -> Self:
+        if self.unit_verified and (self.unit is None or self.provenance is None):
+            raise ValueError("Measured throughput needs a sourced, verified unit")
+        return self
+
+
 class UniqueKeyLoader(yaml.SafeLoader):
     """Reject ambiguous duplicate YAML keys rather than silently overriding safety policy."""
 
@@ -232,4 +291,16 @@ def load_policy(
         constraints=Constraints.model_validate(
             yaml.load(constraints_path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
         ),
+    )
+
+
+def load_severity_policy(path: Path = Path("config/severity.yaml")) -> SeverityPolicy:
+    return SeverityPolicy.model_validate(
+        yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
+    )
+
+
+def load_throughput_policy(path: Path = Path("config/throughput.yaml")) -> ThroughputPolicy:
+    return ThroughputPolicy.model_validate(
+        yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     )

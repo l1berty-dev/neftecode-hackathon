@@ -1,0 +1,7 @@
+version: throughput-v1-review-20260915
+signal_id: ht:F17
+evidence: context/Теги_хакатон.xlsx, КИП C18:D18; численная единица и шкала требуют подтверждения
+unit: null
+unit_verified: false
+provenance: null
+max_age_seconds: 1200

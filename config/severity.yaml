@@ -1,0 +1,34 @@
+version: severity-v1-review-20260915
+# Candidate static endpoint proxy, not equipment safety limits or a dynamic model.
+# Weights are an explicit equal-weight design assumption, not historical calibration.
+factors:
+  - signal_id: ht:P8
+    name: Температурная нагрузка Р-202
+    equipment_relation: Более высокая температура ГСС на входе описывает более тяжёлый температурный режим реактора; износ и вероятность аварии не рассчитаны.
+    evidence: docs/ORGANIZER_CLARIFICATIONS.md, раздел 5; КИП C9:D9
+    unit: null
+    unit_verified: false
+    minimum: null
+    maximum: null
+    weight: 0.3333333333333333
+    provenance: null
+  - signal_id: ht:T11
+    name: Массовая нагрузка установки
+    equipment_relation: Рост подачи сырья описывает большую нагрузку потока на установку; это не выпуск продукта и не оценка ресурса катализатора.
+    evidence: docs/ORGANIZER_CLARIFICATIONS.md, раздел 5; КИП C12:D12
+    unit: null
+    unit_verified: false
+    minimum: null
+    maximum: null
+    weight: 0.3333333333333333
+    provenance: null
+  - signal_id: ht:F19
+    name: Давление на входе Р-202
+    equipment_relation: Более высокое давление описывает большую нагрузку давления на контур Р-202; допустимое промышленное давление и прочность не установлены.
+    evidence: docs/ORGANIZER_CLARIFICATIONS.md, раздел 5; КИП C20:D20
+    unit: null
+    unit_verified: false
+    minimum: null
+    maximum: null
+    weight: 0.3333333333333333
+    provenance: null

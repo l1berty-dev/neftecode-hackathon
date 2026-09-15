@@ -36,7 +36,7 @@ class Coordinator:
             evaluations.append(self.evaluator.evaluate(snapshot, operator_action, horizon_minutes))
         if any(e.admissibility is Admissibility.ADMISSIBLE for e in evaluations):
             raise NotImplementedError(
-                "Ранжирование допустимых вариантов требует этапов C–E; используйте ScenarioEvaluator.evaluate для этапа B"
+                "Ранжирование допустимых вариантов требует этапов D–E; используйте ScenarioEvaluator.evaluate для оценки B–C"
             )
         status = (
             DecisionStatus.INSUFFICIENT_DATA

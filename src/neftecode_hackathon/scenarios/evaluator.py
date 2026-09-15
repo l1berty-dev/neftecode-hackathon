@@ -10,8 +10,6 @@ from neftecode_hackathon.contracts import (
     Admissibility,
     Applicability,
     CheckCategory,
-    EstimateBasis,
-    MetricEstimate,
     ProcessSnapshot,
     QualityAssessment,
     ReliabilityAssessment,
@@ -21,6 +19,7 @@ from neftecode_hackathon.quality.base import QualityAgent
 from neftecode_hackathon.reliability import ReliabilityAgent
 from neftecode_hackathon.scenarios.checks import admissibility, check, pre_model_checks
 from neftecode_hackathon.scenarios.config import ScenarioPolicy, load_policy
+from neftecode_hackathon.scenarios.efficiency import scenario_efficiency
 
 
 class ScenarioEvaluator:
@@ -185,12 +184,7 @@ class ScenarioEvaluator:
                 required=constraints.transition_required,
             )
         )
-        unavailable = MetricEstimate(
-            value=None,
-            unit=None,
-            basis=EstimateBasis.UNAVAILABLE,
-            explanation="Эффект действия и исходные данные для расчёта не подтверждены.",
-        )
+        throughput, cost = scenario_efficiency(snapshot, action, horizon_minutes)
         return ScenarioEvaluation(
             evaluation_id=uuid4(),
             snapshot_id=snapshot.snapshot_id,
@@ -198,8 +192,8 @@ class ScenarioEvaluator:
             action=action,
             quality=quality,
             reliability=reliability,
-            throughput=unavailable,
-            cost=unavailable,
+            throughput=throughput,
+            cost=cost,
             checks=tuple(c.result for c in checks),
             admissibility=admissibility(tuple(checks)),
             reasons=tuple(c.result.message for c in checks if c.result.passed is not True)
