@@ -1,0 +1,63 @@
+constraint_version: "controls-v1-review-20260915"
+controls:
+  - signal_id: "ht:P8"
+    name: "Полисеп. Р-202. Температура ГСС на входе"
+    verification_status: "confirmed"
+    evidence:
+      - "docs/ORGANIZER_CLARIFICATIONS.md, раздел 5; ответ передан 2026-09-15"
+      - "context/Теги_хакатон.xlsx, КИП!C9:D9"
+    canonical_unit: null
+    unit_verified: false
+    action_support_verified: false
+    available: false
+    unavailable_reason: "Не подтверждены численная единица/шкала, train-диапазон, шаг и поддержка вмешательства моделью."
+    model_min: null
+    model_max: null
+    step: null
+    provenance: null
+    range_kind: "experimental"
+    max_age_seconds: 1200
+    max_change_per_minute: null
+    ramp_evidence: null
+  - signal_id: "ht:T11"
+    name: "Расход сырья на установку (массовый)"
+    verification_status: "confirmed"
+    evidence:
+      - "docs/ORGANIZER_CLARIFICATIONS.md, раздел 5; ответ передан 2026-09-15"
+      - "context/Теги_хакатон.xlsx, КИП!C12:D12"
+    canonical_unit: null
+    unit_verified: false
+    action_support_verified: false
+    available: false
+    unavailable_reason: "Не подтверждены численная единица/шкала, train-диапазон, шаг и поддержка вмешательства моделью."
+    model_min: null
+    model_max: null
+    step: null
+    provenance: null
+    range_kind: "experimental"
+    max_age_seconds: 1200
+    max_change_per_minute: null
+    ramp_evidence: null
+  - signal_id: "ht:F19"
+    name: "Полисеп. Р-202. Давление на входе"
+    verification_status: "confirmed"
+    evidence:
+      - "docs/ORGANIZER_CLARIFICATIONS.md, раздел 5; ответ передан 2026-09-15"
+      - "context/Теги_хакатон.xlsx, КИП!C20:D20"
+    canonical_unit: null
+    unit_verified: false
+    action_support_verified: false
+    available: false
+    unavailable_reason: "Не подтверждены численная единица/шкала, train-диапазон, шаг и поддержка вмешательства моделью."
+    model_min: null
+    model_max: null
+    step: null
+    provenance: null
+    range_kind: "experimental"
+    max_age_seconds: 1200
+    max_change_per_minute: null
+    ramp_evidence: null
+review_issues:
+  - "Управляемость P8/T11/F19 подтверждена; буквы тегов не определяют единицы."
+  - "F26 не включён в подтверждённые управления."
+  - "По ответу организаторов ramp limits отсутствуют; безопасность перехода не доказана."
