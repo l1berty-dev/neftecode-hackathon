@@ -31,7 +31,7 @@
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train, SnapshotProvider, единый feature builder и
   artifact-backed QualityAgent для прогноза продолжения; evaluate и serve пока только план.
-- Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support. Coordinator ещё не ранжирует допустимые варианты (D–E) и явно сообщает об этом вместо ложного no_feasible_option.
+- Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support.
 - Этап C разработчика 2 реализован: SeverityProxyAgent с конфигурацией факторов P8/T11/F19, прозрачной нормировкой/вкладами и provenance; current_throughput отдельно от будущей эффективности. Реальные единицы/нормировки не утверждены, поэтому численный индекс и выпуск остаются неизвестными. Будущие выпуск/затраты null/unavailable, переход не оценён. Подробнее: [SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md).
 - Есть compose.yaml (PostgreSQL 17), Alembic 0001, ORM, SnapshotRepository и DecisionRepository. Миграция, FK, rollback, идемпотентность save, JSON/TIMESTAMPTZ и reconnect проверены на отдельном временном PostgreSQL. Replay repository/advance и сервис API ещё не реализованы.
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
@@ -41,9 +41,22 @@
   Маршрутов FastAPI/OpenAPI и frontend пока нет.
 - Статус маршрута разработчика 1: A–D завершены по текущей приёмке; следующий отдельный шаг —
   E, совместная оценка эффекта действий. Завершение D само по себе не разрешает рекомендации.
-- Последние проверки после D: Ruff check/format --check прошли; pytest — 130 passed,
+- Этап D разработчика 2 реализован: до 27 системных кандидатов плюс оператор,
+  единый evaluator, отбор только admissible, сопоставимые цели и sourced tolerances,
+  детерминированные tie-breaks, четыре исхода и до двух разных альтернатив.
+  Текущие tolerances пусты, controls не открыты; continuation forecast не подменяет
+  эффект действия. Полные объяснения/trace отбора добавлены в собственном E ниже.
+  Подробнее: [CANDIDATE_SELECTION_V1.md](../CANDIDATE_SELECTION_V1.md).
+- Этап E разработчика 2 реализован: baseline оценивается до генерации, Decision
+  содержит текущие → новые настройки, факты quality/severity/эффективности,
+  unit/basis/свежесть, проверки, точное основание выбора и видимые ограничения.
+  Trace связывает validation, baseline, generation, остальные evaluations и selection.
+  Это не модель эффекта E первого; реальные controls остаются закрытыми.
+  Передача API и воспроизводимый synthetic пример: [COORDINATOR_V1.md](../COORDINATOR_V1.md).
+- Последние проверки после E разработчика 2: Ruff check/format --check прошли; pytest — 172 passed,
   2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
-  БД/миграции в D не менялись и повторно не запускались.
+  БД/миграции в D–E разработчика 2 не менялись и повторно не запускались.
+  `data/` и `artifacts/` в текущем checkout отсутствуют, новый реальный smoke не запускался.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
 - Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
@@ -439,6 +452,26 @@ pytest 122 passed, 2 skipped, Ruff check/format --check прошли. БД и к
 
 ### D. Генерация и ранжирование кандидатов
 
+Статус на 2026-09-15: техническая часть выполнена. Генератор и селектор
+находятся в `optimization/candidates.py` и `optimization/ranking.py`;
+`config/ranking.yaml` валидируется, Coordinator больше не выдаёт NotImplementedError
+при допустимых вариантах. Все системные/операторские actions идут через один
+evaluator; результаты и причины отказов сохраняются. Точный дубль оператора
+заменяет системный payload; origin/label не влияют на выбор. Unknown-метрики
+не получают ноль, преимущества требуют sourced tolerance для активной модели.
+
+Реальные controls остаются выключенными, tolerances пусты; baseline-прогноз
+первого не используется для непустых действий. Проверены 33 новых D-теста,
+четыре исхода, границы/дубли, сопоставимость, значимость, равенство оценок
+оператора, его возможная победа и невозможность обхода hard checks.
+Общий pytest 163 passed, 2 skipped; Ruff прошёл. Контракт, исходники и БД
+не менялись, реальный smoke не запускался. Подробный алгоритм и передача API:
+[CANDIDATE_SELECTION_V1.md](../CANDIDATE_SELECTION_V1.md).
+
+После D выполнен E, полный trace отбора и объяснение решения (раздел ниже).
+Исходные критерии D ниже сохранены; численная активация реальных действий
+по-прежнему требует совместной предметной передачи.
+
 - На каждом из максимум трёх управлений: current-step, current, current+step.
 - Построить произведение вариантов, убрать недопустимые и дубли, всегда сохранить baseline. До 27 системных кандидатов плюс действие оператора.
 - Все кандидаты идут через один ScenarioEvaluator; никаких отдельных упрощённых формул в подборе.
@@ -457,6 +490,24 @@ pytest 122 passed, 2 skipped, Ruff check/format --check прошли. БД и к
 Пользовательский вариант включать в decide на равных. origin/label не влияют на выбор. Функция отдельной оценки пользовательского действия и оценка внутри decide должны совпадать.
 
 ### E. Координатор и объяснения
+
+Статус на 2026-09-15: технический E выполнен. Coordinator реализует один
+детерминированный конечный цикл, baseline перед генерацией остальных actions.
+`orchestration/explanation.py` строит текст только из вычисленных фактов:
+исход/проблема, настройки и свежесть, прогнозы/unknown с unit/basis, проверки,
+основание выбора, альтернативы и ограничения. Unknown не подменяется нулём,
+transition flag не представляется гарантией; action model E первого всё ещё нужен.
+
+Trace содержит реальные validation/generation/evaluator/selection с ID-связями,
+результатами и причинами, не вымышленный диалог. Все evaluations представлены,
+включая допустимые варианты вне двух альтернатив. Контракт/fixture/schema
+и БД не менялись. 9 новых E-тестов; общий pytest 172 passed, 2 skipped,
+Ruff check/format --check прошли. Реальный smoke/миграции не запускались.
+Передача первому: интерфейсы, зависимости, пример композиции, воспроизводимый
+synthetic результат и тесты в [COORDINATOR_V1.md](../COORDINATOR_V1.md).
+
+Следующий собственный этап — F, полнота repositories/replay persistence и
+проверки на отдельном PostgreSQL. Исходные критерии E ниже сохранены.
 
 Цикл:
 1. Проверить состояние и конфигурацию.

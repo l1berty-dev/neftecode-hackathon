@@ -1,0 +1,5 @@
+version: ranking-v1-review-20260915
+# Continuation forecast does not establish intervention effect or its uncertainty.
+# No tolerances inferred from final test, history-wide ranges or arbitrary constants.
+model_version: null
+tolerances: []

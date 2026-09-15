@@ -69,7 +69,7 @@ def test_fixture_full_cycle_and_roundtrip(example):
     assert decision.baseline.cost.value is None
     assert decision.baseline.throughput.value is None
     assert decision.baseline.reliability.transition_assessed is False
-    assert len(decision.trace) == 2
+    assert len([entry for entry in decision.trace if entry.role == "scenario_evaluator"]) == 2
 
 
 @pytest.mark.parametrize("changes", [{}, {"ht:F26": 252.0}, {"ht:unknown": 1.0}])

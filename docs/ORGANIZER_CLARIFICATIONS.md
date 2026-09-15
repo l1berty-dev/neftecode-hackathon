@@ -158,7 +158,8 @@ train-only/model bounds и поддержки действия агентом к
 ## Следующая передача и приоритет
 
 1. Разработчик 1 уже исправил доступность/единицы/verification в подготовке по этому
-   реестру и реализовал SnapshotProvider. Далее — единый feature builder и модель/manifest.
+   реестру, реализовал SnapshotProvider, единый feature builder и baseline-модель/manifest.
+   Далее его E — совместная обоснованная оценка эффекта вмешательства.
 2. Разработчик 2: технический этап B выполнен — каталог P8/T11/F19, валидируемая
    конфигурация и hard checks подключены. Реальные available=false до получения
    единиц/шкал, train-диапазонов/шага, модели/support и утверждения inventory.
@@ -168,7 +169,11 @@ train-only/model bounds и поддержки действия агентом к
 4. Разработчик 2: технический этап C выполнен — прозрачная тяжесть и разделение
    текущих измерений/будущих unavailable-метрик. Реальные шкалы/нормировки ещё
    не утверждены: [SEVERITY_EFFICIENCY_V1.md](SEVERITY_EFFICIENCY_V1.md).
-   Далее D–E: генерация до 27 вариантов, ранжирование, четыре исхода и объяснение.
+   Технический D также выполнен: генерация до 27 вариантов, общий evaluator,
+   sourced tolerances и четыре исхода —
+   [CANDIDATE_SELECTION_V1.md](CANDIDATE_SELECTION_V1.md). Собственный E выполнен:
+   полное объяснение и trace отбора — [COORDINATOR_V1.md](COORDINATOR_V1.md).
+   Далее F/replay persistence. Реальные действия ещё не открыты.
 5. Интеграция: реальный snapshot → реальные оценки/отказ → operator action →
    транзакция PostgreSQL → чтение. Далее replay repository, FastAPI/OpenAPI и React.
 

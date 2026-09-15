@@ -261,6 +261,35 @@ class ThroughputPolicy(PolicyModel):
         return self
 
 
+class MetricTolerance(PolicyModel):
+    metric: Literal["throughput", "severity", "cost"]
+    unit: NonEmptyText
+    basis: Literal["predicted", "proxy"]
+    threshold: Positive
+    evidence: NonEmptyText
+    provenance: RangeProvenance
+
+    @model_validator(mode="after")
+    def validate_severity(self) -> Self:
+        if self.metric == "severity" and (self.unit != "1" or self.basis != "proxy"):
+            raise ValueError("Severity tolerance must use dimensionless proxy")
+        return self
+
+
+class RankingPolicy(PolicyModel):
+    version: NonEmptyText
+    model_version: NonEmptyText | None = None
+    tolerances: tuple[MetricTolerance, ...] = ()
+
+    @model_validator(mode="after")
+    def validate_tolerances(self) -> Self:
+        if len({t.metric for t in self.tolerances}) != len(self.tolerances):
+            raise ValueError("Duplicate metric tolerances")
+        if self.tolerances and self.model_version is None:
+            raise ValueError("Tolerances require the supported model version")
+        return self
+
+
 class UniqueKeyLoader(yaml.SafeLoader):
     """Reject ambiguous duplicate YAML keys rather than silently overriding safety policy."""
 
@@ -302,5 +331,11 @@ def load_severity_policy(path: Path = Path("config/severity.yaml")) -> SeverityP
 
 def load_throughput_policy(path: Path = Path("config/throughput.yaml")) -> ThroughputPolicy:
     return ThroughputPolicy.model_validate(
+        yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
+    )
+
+
+def load_ranking_policy(path: Path = Path("config/ranking.yaml")) -> RankingPolicy:
+    return RankingPolicy.model_validate(
         yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     )

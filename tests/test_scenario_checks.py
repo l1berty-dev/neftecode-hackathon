@@ -478,8 +478,10 @@ def test_coordinator_does_not_mislabel_feasible_options(setup):
         model_version=example.evaluation.model_version,
         policy=ScenarioPolicy.model_validate(setup[2]),
     )
-    with pytest.raises(NotImplementedError, match="D–E"):
-        Coordinator(evaluator).decide(ProcessSnapshot.model_validate(setup[1]))
+    decision = Coordinator(evaluator).decide(ProcessSnapshot.model_validate(setup[1]))
+    assert decision.status.value == "no_change"
+    assert decision.preferred == decision.baseline
+    assert len([entry for entry in decision.trace if entry.role == "scenario_evaluator"]) == 27
 
 
 def test_c_proxy_integrates_without_fabricating_efficiency(setup):
