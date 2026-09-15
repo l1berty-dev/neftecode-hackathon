@@ -127,18 +127,25 @@ def test_real_catalogue_confirmed_but_disabled(setup):
         c.verification_status == "confirmed" and not c.available for c in policy.catalogue.controls
     )
     example = setup[0]
-    agent = TestQualityAgent(example.evaluation.quality)
+    agent = TestQualityAgent(
+        example.evaluation.quality.model_copy(
+            update={"model_version": policy.constraints.model_version}
+        )
+    )
     evaluator = ScenarioEvaluator(
-        agent, UnavailableReliabilityAgent(), model_version=example.evaluation.model_version
+        agent,
+        UnavailableReliabilityAgent(),
+        model_version=policy.constraints.model_version,
+        policy=policy,
     )
     baseline = example.action.model_copy(update={"changes": {}})
     result = evaluator.evaluate(example.snapshot, baseline)
     assert result.admissibility is Admissibility.NOT_ASSESSABLE
-    assert result.quality.applicability is Applicability.INSUFFICIENT_DATA
-    assert not agent.calls
+    assert result.quality.applicability is Applicability.SUPPORTED
+    assert len(agent.calls) == 1
     changed = baseline.model_copy(update={"changes": {"ht:P8": 0.2}})
     assert evaluator.evaluate(example.snapshot, changed).admissibility is Admissibility.REJECTED
-    assert not agent.calls
+    assert len(agent.calls) == 1
 
 
 @pytest.mark.parametrize(

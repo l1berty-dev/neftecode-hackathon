@@ -3,7 +3,8 @@
 Исторический протокол A. Актуальный этап C описан в
 [SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md) и обоих handoff.
 После этого протокола разработчик 1 реализовал LIMS delay 240 минут,
-коррекцию единиц ЛИМС и SnapshotProvider. Пометки ниже о невнедрённых
+коррекцию единиц ЛИМС, SnapshotProvider и пункт D: воспроизводимый continuation
+forecast, manifest и artifact-backed QualityAgent. Пометки ниже о невнедрённых
 исправлениях описывают состояние A, а не текущий код.
 
 Область этого этапа — раздел A `HANDOFF_DEVELOPER_2.md`, не Definition of done
@@ -153,13 +154,18 @@ FK, rollback, JSON round-trip и чтение после переподключ�
 
 Остаются необходимые точки передачи:
 
-1. Реальный SnapshotProvider — сейчас есть подготовка рядов, но нет provider.
-2. Обязательные входы/свежесть модели, подтверждённые единицы и перечень управлений.
-3. Реальный QualityAgent, manifest, версия и метод интервала, совместная поддержка
-   действий. Протокол не подтверждает готовность модели.
+1. SnapshotProvider передан; production-интеграция второго должна использовать его вместо fixture.
+2. Mandatory manifest передан для continuation forecast: свежая ПАК-сера, `mg/kg`, <=1200 s.
+   Подтверждённые единицы/шкалы и train-only диапазоны управлений всё ещё отсутствуют.
+3. Реальный QualityAgent, manifest, версия и validation-residual interval переданы. Совместная
+   поддержка действий не подтверждена: непустой action остаётся unsupported до E.
 4. Train-only диапазоны и нормировки, источники hard/ramp/combination checks.
 5. OpenAPI и ответы всех исходов; реальная интеграция PostgreSQL с сервисом API.
 6. Эпизоды replay без доступного при обучении/подборе будущего.
+
+Фактическая передача D: [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md). Выбран persistence
+baseline, потому что HGB проиграл ему по validation MAE; final-test coverage номинального 0.90
+интервала равно 0.819032, поэтому общая interval policy остаётся неутверждённой.
 
 Совместная проверка/согласование не имитировалась. React не создавался: handoff
 требует сначала общий работающий Python-расчёт, затем API и UI. Приложение и

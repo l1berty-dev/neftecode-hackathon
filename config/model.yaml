@@ -22,3 +22,38 @@ availability:
     online: 20
     pak: 20
     lims: 2880
+
+training:
+  target_signal_id: pak:ht.product_sulfur
+  target_unit: mg/kg
+  interval_quantile: 0.90
+  split_fractions: [0.70, 0.15, 0.15]
+  feature_series:
+    - signal_id: pak:ht.product_sulfur
+      unit: mg/kg
+      prefix: pak_sulfur
+      required_current: true
+    - signal_id: pak:ht.product_density_d15
+      unit: kg/m³
+      prefix: pak_density_d15
+      required_current: false
+  analysis_features:
+    - signal_id: lab:ht.point_1.sulfur_mass_fraction
+      unit: "% mass"
+      prefix: lims_raw_sulfur_mass_fraction
+      freshness_minutes: 2880
+    - signal_id: lab:ht.point_2.sulfur
+      unit: mg/kg
+      prefix: lims_product_sulfur
+      freshness_minutes: 2880
+  lags_minutes: [10, 60, 360]
+  rolling_windows_minutes: [60, 360]
+  change_minutes: 60
+  estimator:
+    name: HistGradientBoostingRegressor
+    loss: squared_error
+    max_iter: 200
+    max_leaf_nodes: 15
+    learning_rate: 0.05
+    l2_regularization: 1.0
+    early_stopping: false

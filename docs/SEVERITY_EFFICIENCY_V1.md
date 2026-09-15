@@ -96,7 +96,7 @@ limitations сырое значение/единицу, запрос настр�
 from neftecode_hackathon.reliability import SeverityProxyAgent
 from neftecode_hackathon.scenarios import ScenarioEvaluator
 
-# quality_agent — явная зависимость; реальная модель ещё не передана.
+# quality_agent — явная зависимость; continuation agent передан разработчиком 1.
 evaluator = ScenarioEvaluator(
     quality_agent,
     SeverityProxyAgent(),
@@ -108,10 +108,10 @@ evaluation = evaluator.evaluate(snapshot, action, 60)
 При непройденных pre-model checks evaluator не вызывает агенты. Для read-only
 диагностики snapshot можно отдельно передать `SeverityProxyAgent().assess` и
 `current_throughput`; это не обход проверки допустимости действий.
-`SnapshotProvider` разработчика 1 уже реализован с LIMS delay 240 минут, но
-`data/processed/` отсутствует в checkout на момент C: реальный smoke в этом этапе
-не запускался и большие данные не пересобирались. Предыдущий smoke в handoff —
-исторический результат передачи первого разработчика.
+`SnapshotProvider` разработчика 1 реализован с LIMS delay 240 минут. После завершения этого
+исторического этапа C разработчик 1 передал continuation `ForecastQualityAgent`: реальный
+baseline проходит quality path, но вся evaluation остаётся `not_assessable` из-за пока null
+interval policy и hard-check inventory. См. [FORECAST_MODEL_V1.md](FORECAST_MODEL_V1.md).
 
 Проверки: `tests/test_severity_efficiency.py` и интеграционный тест в
 `tests/test_scenario_checks.py`: нормировка и границы, вклад каждого фактора,

@@ -58,8 +58,13 @@ uv run neftecode-hackathon prepare
 requires both `measured_at <= t` and `available_at <= t`, and includes the inclusive interval
 `[t - 360 minutes, t]` in history. Freshness comes from `config/model.yaml`; completeness comes
 only from an explicitly verified model-input manifest in developer 2's validated scenario policy.
-Until that manifest exists, completeness is `0` with `required_input_manifest_unverified`.
+After route D the manifest requires fresh valid `pak:ht.product_sulfur` in `mg/kg` with a maximum
+age of 1200 seconds; snapshots before training or with a different policy remain fail-closed.
 
 Optional `SourceConflictRule` objects allow a train/validation-derived threshold to mark two fresh
 equivalent sources suspect. No real conflict threshold is configured before model training, and the
 final test period must not be used to choose one.
+
+The reproducible forecast workflow and actual holdout metrics are documented in
+[`FORECAST_MODEL_V1.md`](FORECAST_MODEL_V1.md). Generated model and metric artifacts stay ignored
+by Git and are recreated with `uv run neftecode-hackathon train`.

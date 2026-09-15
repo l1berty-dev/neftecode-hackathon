@@ -29,19 +29,23 @@
 Срез на 2026-09-15, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
-- Реализованы загрузка/аудит, CLI prepare и SnapshotProvider; train, evaluate, serve пока только план.
+- Реализованы загрузка/аудит, CLI prepare/train, SnapshotProvider, единый feature builder и
+  artifact-backed QualityAgent для прогноза продолжения; evaluate и serve пока только план.
 - Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support. Coordinator ещё не ранжирует допустимые варианты (D–E) и явно сообщает об этом вместо ложного no_feasible_option.
 - Этап C разработчика 2 реализован: SeverityProxyAgent с конфигурацией факторов P8/T11/F19, прозрачной нормировкой/вкладами и provenance; current_throughput отдельно от будущей эффективности. Реальные единицы/нормировки не утверждены, поэтому численный индекс и выпуск остаются неизвестными. Будущие выпуск/затраты null/unavailable, переход не оценён. Подробнее: [SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md).
 - Есть compose.yaml (PostgreSQL 17), Alembic 0001, ORM, SnapshotRepository и DecisionRepository. Миграция, FK, rollback, идемпотентность save, JSON/TIMESTAMPTZ и reconnect проверены на отдельном временном PostgreSQL. Replay repository/advance и сервис API ещё не реализованы.
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
-- Реальной модели, маршрутов FastAPI/OpenAPI и frontend пока нет. SnapshotProvider реализован;
-  производные данные воспроизводятся командой `prepare`; в checkout при выполнении C
-  `data/processed/` отсутствует. Реальный smoke первого разработчика — историческая проверка.
-- Последние проверки после C: Ruff check/format --check прошли; pytest — 122 passed,
+- Пункт D первого разработчика реализован: HGB честно сравнен с persistence на validation;
+  выбран победивший persistence baseline, создан empirical interval и отдельная test/ЛИМС-
+  оценка. Артефакты воспроизводятся `train` и не коммитятся. Действия не поддержаны до E.
+  Маршрутов FastAPI/OpenAPI и frontend пока нет.
+- Статус маршрута разработчика 1: A–D завершены по текущей приёмке; следующий отдельный шаг —
+  E, совместная оценка эффекта действий. Завершение D само по себе не разрешает рекомендации.
+- Последние проверки после D: Ruff check/format --check прошли; pytest — 130 passed,
   2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
-  БД/миграции в C не менялись и повторно не запускались.
+  БД/миграции в D не менялись и повторно не запускались.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
-- Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
+- Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
 Перед работой проверьте текущий git diff и AGENTS.md, если он появится. Не удаляйте чужие изменения, не переписывайте исходники context, не коммитьте секреты, сырые данные, обученные бинарные модели и большие производные файлы без отдельной договорённости. Не создавайте свои копии чужих модулей при отсутствии готовой реализации: используйте согласованный интерфейс и тестовый двойник.
 
@@ -206,7 +210,8 @@ Replay в прототипе имеет один общий курсор для 
    production-интеграции; synthetic fixture остаётся только в tests.
 3. Разработчик 2 передаёт evaluator/coordinator, работающие с инъекцией тестового QualityAgent. Первый проверяет совместимость реальной модели.
 4. Совместно утверждается каталог управлений. До этого механика генерации работает только в tests; реальные советы не считаются готовыми.
-5. Разработчик 1 передаёт модель, manifest и отчёт. Второй подключает QualityAgent без переписывания собственного расчётного пути.
+5. Разработчик 1 передал continuation model, manifest, QualityAgent и отчёт. Второй подключает
+   их без переписывания собственного расчётного пути; action support остаётся отдельной E.
 6. Полный цикл проверяется программно; затем первый оформляет API, второй делает UI по OpenAPI и общим примерам.
 7. Совместно: запуск на чистом окружении, три демонстрационных эпизода, репетиция.
 
@@ -352,7 +357,7 @@ SnapshotProvider и агент качества; последующее факт
   `measured_at <= t` и `available_at <= t`, возвращает включительное окно истории
   `[t - 360 минут, t]`, вычисляет `age_seconds` и переводит просроченное valid-значение в
   suspect с issue `stale`. Сера сырья/продукта и лабораторные точки не объединяются.
-- Provider читает required inputs из уже валидированной scenario policy. Сейчас
+- Provider читает required inputs из уже валидированной scenario policy. На момент передачи C
   `model_inputs_verified=false` и `required_inputs=[]`, поэтому реальный snapshot намеренно
   имеет `completeness=0` и issue `required_input_manifest_unverified`. Это совместимо с текущим
   pre-model check: QualityAgent не должен вызываться до передачи реального manifest из этапа D
@@ -405,6 +410,32 @@ pytest 122 passed, 2 skipped, Ruff check/format --check прошли. БД и к
 8. Не превращать «не оценено» в 0 при ранжировании, сериализации или отображении.
 
 Приёмка: оценка содержит факторы/формулы/ограничения, и неустановленный эффект остаётся неизвестным.
+
+#### Передача прогноза D от разработчика 1 (2026-09-15)
+
+**Статус передачи: принятая реализация доступна для интеграции.** Она даёт continuation forecast
+для baseline, но не подтверждает причинный эффект изменения P8/T11/F19 и не открывает controls.
+
+- Доступны `ForecastQualityAgent.from_repository()` и воспроизводимая команда
+  `uv run neftecode-hackathon train`. Публичный результат остаётся `QualityAssessment` из
+  `contracts.py`; новый evaluator или DTO не создавался.
+- Активная model version:
+  `forecast-v1:9ade91386ad0311b3e3e60b061d34ffafd1cde188e32a268fb29c1f6b986fa0a`.
+  На validation HGB MAE 0.621067 проиграл persistence 0.573082, поэтому выбран baseline.
+  Untouched test MAE 0.706412; nominal 0.90 interval дал test coverage 0.819032.
+- В `config/constraints.yaml` теперь `model_inputs_verified=true`; mandatory input — fresh valid
+  `pak:ht.product_sulfur`, `mg/kg`, age <=1200 s. Версия policy синхронно обновлена в controls и
+  constraints. `minimum_interval_coverage` намеренно null: снижать его по final test нельзя.
+- Agent поддерживает только пустой action на 60 минут и replay начиная с test boundary. Непустые
+  действия unsupported до совместного E; P8/T11/F19 всё ещё available=false. Реальный evaluator
+  вызывает QualityAgent и получает supported forecast, но итог остаётся not_assessable из-за
+  неизвестных interval policy и inventory hard checks.
+- Полные split, target audit, PAK/test и ЛИМС-метрики, feature schema и ограничения описаны в
+  [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md). Артефакты Git-ignored и должны быть созданы
+  локальной командой train после prepare.
+
+Для собственного этапа D второго разработчика этот прогноз можно использовать в едином evaluator,
+но нельзя ранжировать непустые candidates по continuation baseline как по эффекту вмешательства.
 
 ### D. Генерация и ранжирование кандидатов
 
