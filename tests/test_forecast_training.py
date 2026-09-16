@@ -20,6 +20,7 @@ from neftecode_hackathon.contracts import (
     ProcessSnapshot,
     SnapshotMode,
 )
+from neftecode_hackathon.quality.action_support import build_action_support_audit
 from neftecode_hackathon.quality.features import ForecastFeatureBuilder, ForecastFeatureConfig
 from neftecode_hackathon.quality.forecast import ForecastQualityAgent
 from neftecode_hackathon.quality.training import (
@@ -28,6 +29,7 @@ from neftecode_hackathon.quality.training import (
     forecast_metrics,
     temporal_split,
 )
+from neftecode_hackathon.scenarios.config import load_policy
 
 
 def model_config() -> dict:
@@ -56,6 +58,11 @@ def model_config() -> dict:
             "lags_minutes": [10, 60],
             "rolling_windows_minutes": [60],
             "change_minutes": 60,
+        },
+        "action_assessment": {
+            "controls": ["ht:P8", "ht:T11", "ht:F19"],
+            "hold_minutes": 60,
+            "sample_interval_minutes": 10,
         },
     }
 
@@ -230,6 +237,24 @@ def test_artifact_agent_serves_only_safe_baseline_replay(tmp_path: Path) -> None
             }
         ],
         "uncertainty": {"radius_mg_per_kg": 1.0, "quantile": 0.9},
+        "action_support": {
+            "schema_version": 1,
+            "status": "blocked",
+            "controls": [
+                {
+                    "signal_id": "ht:P8",
+                    "supported": False,
+                    "blockers": [
+                        {
+                            "code": "unit_scale_unverified",
+                            "message": "Canonical numerical unit/scale is not verified.",
+                        }
+                    ],
+                }
+            ],
+            "joint_support": {"calibrated": False},
+            "counterfactual_uncertainty": {"calibrated": False},
+        },
     }
     (tmp_path / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     joblib.dump(
@@ -253,7 +278,22 @@ def test_artifact_agent_serves_only_safe_baseline_replay(tmp_path: Path) -> None
     early = snapshot_at(datetime(2026, 1, 1, 12, tzinfo=UTC))
     assert agent.assess(early, baseline, 60).applicability is Applicability.UNSUPPORTED
     changed = baseline.model_copy(update={"changes": {"ht:P8": 1.0}})
-    assert agent.assess(safe_snapshot, changed, 60).applicability is Applicability.UNSUPPORTED
+    changed_result = agent.assess(safe_snapshot, changed, 60)
+    assert changed_result.applicability is Applicability.UNSUPPORTED
+    assert changed_result.prediction is None
+    assert any("ht:P8" in reason and "unit/scale" in reason for reason in changed_result.reasons)
+
+    same_change = Action(
+        action_id=uuid4(),
+        label="Operator label must not matter",
+        origin=ActionOrigin.OPERATOR,
+        changes={"ht:P8": 1.0},
+    )
+    same_result = agent.assess(safe_snapshot, same_change, 60)
+    assert same_result.model_dump(exclude={"reasons"}) == changed_result.model_dump(
+        exclude={"reasons"}
+    )
+    assert same_result.reasons == changed_result.reasons
 
     changed_config = model_config()
     changed_config["forecast"]["random_seed"] = 7
@@ -267,3 +307,76 @@ def test_feature_config_rejects_window_beyond_snapshot_history() -> None:
     raw["training"]["lags_minutes"] = [120]
     with pytest.raises(ValueError, match="history"):
         ForecastFeatureConfig.from_mapping(raw)
+
+
+def test_action_support_audit_is_train_only_and_fail_closed() -> None:
+    start = pd.Timestamp("2025-01-01T00:00:00Z")
+    rows = []
+    for signal_id, value in (("ht:P8", 0.15), ("ht:T11", 363.0), ("ht:F19", 212.0)):
+        for offset in range(8):
+            rows.append(
+                {
+                    "signal_id": signal_id,
+                    "measured_at": start + pd.Timedelta(minutes=10 * offset),
+                    "value": value if offset < 7 else value + 1,
+                    "quality": "valid",
+                }
+            )
+        rows.append(
+            {
+                "signal_id": signal_id,
+                "measured_at": start + pd.Timedelta(days=1),
+                "value": 9999.0,
+                "quality": "valid",
+            }
+        )
+    dictionary = {
+        "fields": [
+            {
+                "signal_id": signal_id,
+                "description": signal_id,
+                "original_unit": None,
+                "canonical_unit": None,
+                "verification_status": "mapping_confirmed_unit_unverified",
+            }
+            for signal_id in ("ht:P8", "ht:T11", "ht:F19")
+        ]
+    }
+
+    audit = build_action_support_audit(
+        model_config(),
+        dictionary,
+        pd.DataFrame(rows),
+        train_end=start + pd.Timedelta(minutes=70),
+        selected_predictor="persistence_baseline",
+    )
+
+    assert audit["status"] == "blocked"
+    assert audit["joint_support"]["k_neighbors"] is None
+    assert audit["counterfactual_uncertainty"]["interval_coverage_target"] is None
+    for control in audit["controls"]:
+        assert control["supported"] is False
+        assert control["train_raw_audit"]["maximum"] < 9999
+        assert control["train_raw_audit"]["exact_hold_count"] == 1
+        assert {item["code"] for item in control["blockers"]} >= {
+            "unit_scale_unverified",
+            "held_setting_episodes_unvalidated",
+            "joint_support_not_calibrated",
+            "transition_not_assessed",
+            "predictor_has_no_action_response",
+        }
+
+
+def test_repository_action_controls_match_fail_closed_scenario_catalogue() -> None:
+    root = Path(__file__).resolve().parents[1]
+    configured = yaml.safe_load((root / "config" / "model.yaml").read_text(encoding="utf-8"))
+    policy = load_policy(root / "config" / "controls.yaml", root / "config" / "constraints.yaml")
+
+    model_controls = set(configured["action_assessment"]["controls"])
+    scenario_controls = {control.signal_id for control in policy.catalogue.controls}
+
+    assert model_controls == scenario_controls == {"ht:P8", "ht:T11", "ht:F19"}
+    assert all(not control.available for control in policy.catalogue.controls)
+    assert all(not control.action_support_verified for control in policy.catalogue.controls)
+    assert policy.constraints.model_inputs_verified is True
+    assert policy.constraints.model_version.startswith("forecast-v1:")

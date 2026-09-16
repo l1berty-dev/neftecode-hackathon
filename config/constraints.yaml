@@ -1,4 +1,4 @@
-constraint_version: "controls-v1-forecast-manifest-20260915"
+constraint_version: "controls-v1-action-readiness-20260916"
 horizon_minutes: 60
 target: "ht.product_sulfur"
 unit: "mg/kg"
@@ -6,7 +6,7 @@ sulfur_upper_limit: 10
 quality_evidence: "context/ТЗ_нефтекод.pdf; границы v1 в AGENTS.md"
 minimum_interval_coverage: null
 model_inputs_verified: true
-model_version: "forecast-v1:9ade91386ad0311b3e3e60b061d34ffafd1cde188e32a268fb29c1f6b986fa0a"
+model_version: "forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365"
 required_inputs:
   - signal_id: "pak:ht.product_sulfur"
     unit: "mg/kg"
@@ -23,3 +23,4 @@ limitations:
   - "По ответу организаторов ramp limits отсутствуют; безопасность перехода не доказана."
   - "Для прогноза продолжения выбран persistence baseline: HGB проиграл ему по validation MAE."
   - "Минимальное interval coverage не утверждено: nominal 0.90 дало 0.819 на final test; порог по test не подбирается."
+  - "Action-support audit заблокировал P8/T11/F19: единицы/шкалы, эпизоды удержания, совместная train-support область, неопределённость эффекта и переход не подтверждены."

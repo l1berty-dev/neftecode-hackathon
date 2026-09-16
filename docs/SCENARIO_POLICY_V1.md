@@ -98,10 +98,12 @@ counterfactual-интервала. Пригодность метода/огра�
 с manifest/report; проверка поля не доказывает причинность и промышленную гарантию.
 Минимальное покрытие пока null, поэтому реальная политика не выдаёт допустимость. Пункт D теперь
 передал verified manifest модели
-`forecast-v1:9ade91386ad0311b3e3e60b061d34ffafd1cde188e32a268fb29c1f6b986fa0a` с одним обязательным
+`forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365` с одним обязательным
 входом: fresh valid `pak:ht.product_sulfur`, `mg/kg`, возраст <=1200 секунд. Номинальный
 validation-residual interval 0.90 дал coverage 0.819032 на final test; policy не ослабляется по
-этому результату. См. [FORECAST_MODEL_V1.md](FORECAST_MODEL_V1.md).
+этому результату. Action-readiness audit E оставил P8/T11/F19 неподдержанными по отдельным
+проверяемым причинам; см. [FORECAST_MODEL_V1.md](FORECAST_MODEL_V1.md) и
+[ACTION_ASSESSMENT_V1.md](ACTION_ASSESSMENT_V1.md).
 
 `hard_check_inventory_verified` с evidence подтверждает состав реальных обязательных
 проверок. До совместного утверждения null-check блокирует admissible; proxy severity

@@ -6,6 +6,9 @@
 коррекцию единиц ЛИМС, SnapshotProvider и пункт D: воспроизводимый continuation
 forecast, manifest и artifact-backed QualityAgent. Пометки ниже о невнедрённых
 исправлениях описывают состояние A, а не текущий код.
+Пункт E разработчика 1 затем добавил versioned action-readiness audit. Он подтвердил
+штатную блокировку P8/T11/F19 без counterfactual-чисел; см.
+[ACTION_ASSESSMENT_V1.md](../ACTION_ASSESSMENT_V1.md).
 
 Область этого этапа — раздел A `HANDOFF_DEVELOPER_2.md`, не Definition of done
 всего продукта. Это протокол подготовительного запуска. Оба основных handoff
@@ -157,8 +160,8 @@ FK, rollback, JSON round-trip и чтение после переподключ�
 1. SnapshotProvider передан; production-интеграция второго должна использовать его вместо fixture.
 2. Mandatory manifest передан для continuation forecast: свежая ПАК-сера, `mg/kg`, <=1200 s.
    Подтверждённые единицы/шкалы и train-only диапазоны управлений всё ещё отсутствуют.
-3. Реальный QualityAgent, manifest, версия и validation-residual interval переданы. Совместная
-   поддержка действий не подтверждена: непустой action остаётся unsupported до E.
+3. Реальный QualityAgent, manifest, версия и validation-residual interval переданы. E выполнен
+   как fail-closed audit: непустой action остаётся unsupported по конкретным versioned blockers.
 4. Train-only диапазоны и нормировки, источники hard/ramp/combination checks.
 5. OpenAPI и ответы всех исходов; реальная интеграция PostgreSQL с сервисом API.
 6. Эпизоды replay без доступного при обучении/подборе будущего.

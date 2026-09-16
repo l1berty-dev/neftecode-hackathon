@@ -2,7 +2,8 @@
 
 Реализация пункта D первого разработчика строит прогноз серы ПАК ровно через 60 минут при
 сохранении настроек. Это наблюдательный continuation forecast, а не доказательство эффекта
-управляющего действия. Непустые `Action.changes` остаются `unsupported` до отдельного пункта E.
+управляющего действия. Пункт E провёл отдельный action-readiness audit; непустые
+`Action.changes` остаются `unsupported`, потому что эффект вмешательства нельзя защитить.
 
 ## Воспроизведение
 
@@ -55,7 +56,7 @@ Imputer/scaler не используются; HGB обрабатывает пр�
 ## Фактический результат
 
 Model version:
-`forecast-v1:9ade91386ad0311b3e3e60b061d34ffafd1cde188e32a268fb29c1f6b986fa0a`.
+`forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365`.
 
 | Метрика | HGB | Persistence baseline |
 | --- | ---: | ---: |
@@ -75,6 +76,15 @@ HGB проиграл на validation, поэтому выбран `persistence_b
 Отдельная сверка с ЛИМС продукта строит состояние за 60 минут до времени отбора и использует
 лабораторное значение только как последующий label: 217 test-сопоставлений, MAE 1.676522 мг/кг,
 coverage 0.552995. Это существенно слабее сверки по ПАК и явно показывается, а не скрывается.
+
+## Action-readiness audit
+
+После выбора continuation predictor train-команда отдельно проверяет готовность P8/T11/F19 к
+оценке вмешательства. Проверка использует только train и фиксируется в тех же manifest/metrics.
+Она не нашла подтверждённых физических единиц/шкал или валидированных эпизодов удержания;
+выбранный persistence predictor также не зависит от controls. Поэтому joint-support k/threshold,
+counterfactual interval и transition response остаются `null`, а все три управления —
+`supported=false`. Подробности и train-only числа: [ACTION_ASSESSMENT_V1.md](ACTION_ASSESSMENT_V1.md).
 
 ## Serving и ограничения
 

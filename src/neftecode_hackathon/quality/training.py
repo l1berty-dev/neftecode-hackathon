@@ -16,6 +16,7 @@ import pyarrow.parquet as pq
 import yaml
 from sklearn.ensemble import HistGradientBoostingRegressor
 
+from neftecode_hackathon.quality.action_support import build_action_support_audit
 from neftecode_hackathon.quality.features import ForecastFeatureBuilder, ForecastFeatureConfig
 
 
@@ -179,6 +180,22 @@ def train_forecast(
     baseline_test = x_test[baseline_column].to_numpy(dtype=float)
     selected_test = model_test if selected == "hist_gradient_boosting" else baseline_test
 
+    action_control_ids = [str(value) for value in model_config["action_assessment"]["controls"]]
+    if progress:
+        progress("Auditing action support on train-only telemetry")
+    control_telemetry = pq.read_table(
+        processed / "telemetry.parquet",
+        filters=[("signal_id", "in", action_control_ids)],
+        columns=["signal_id", "measured_at", "value", "quality"],
+    ).to_pandas()
+    action_support = build_action_support_audit(
+        model_config,
+        _read_json(processed / "data_dictionary.json"),
+        control_telemetry,
+        train_end=splits.train["target_time"].max(),
+        selected_predictor=selected,
+    )
+
     split_summary = {
         "fractions": list(fractions),
         "validation_start": splits.validation_start.isoformat(),
@@ -198,6 +215,8 @@ def train_forecast(
         "split": split_summary,
         "training_code_sha256": _sha256(Path(__file__)),
         "feature_code_sha256": _sha256(Path(__file__).with_name("features.py")),
+        "action_support_code_sha256": _sha256(Path(__file__).with_name("action_support.py")),
+        "action_support": action_support,
     }
     model_version = "forecast-v1:" + _canonical_hash(version_payload)
     validation_metrics = {
@@ -255,6 +274,7 @@ def train_forecast(
             "radius_mg_per_kg": interval_radius,
             "coverage_claim": "empirical validation calibration; test coverage is reported, not guaranteed",
         },
+        "action_support": action_support,
         "model_config_sha256": version_payload["model_config_sha256"],
         "limitations": [
             "Continuation forecast only; it does not establish a causal action effect.",
@@ -262,6 +282,7 @@ def train_forecast(
             "Telemetry controls are excluded until their numerical units/scales are verified.",
             "LIMS features use only results available by origin under the 240-minute delay policy.",
             "Replay at or before selected_through is refused because model selection saw its future.",
+            "Action assessment is blocked: control units/scales, held-setting episodes, joint support, counterfactual uncertainty, and transition response are not verified.",
         ],
     }
     metrics = {
@@ -281,6 +302,7 @@ def train_forecast(
         "validation": validation_metrics,
         "test": test_metrics,
         "lims_product_sulfur_test": lab_metrics,
+        "action_support": action_support,
     }
     artifacts.mkdir(parents=True, exist_ok=True)
     _write_json(artifacts / "manifest.json", manifest)
@@ -412,6 +434,11 @@ absolute validation residuals; the lower bound is clipped at zero. Test coverage
 
 Product LIMS comparison uses state at 60 minutes before sample time and never exposes the sample
 to its own features. Matched test samples: `{lab["count"]}`; MAE: `{lab["mae"]}`.
+
+Action assessment status is **{manifest["action_support"]["status"]}**. The artifact records
+train-only raw diagnostics for P8/T11/F19, but exposes no counterfactual prediction because
+physical units/scales, held-setting episodes, joint support and effect uncertainty are not
+calibrated. Continuation residual coverage is not reused for actions.
 
 Limitations:
 

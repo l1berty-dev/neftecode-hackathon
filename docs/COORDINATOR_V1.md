@@ -120,9 +120,11 @@ snapshot = provider.get_snapshot(datetime(2026, 8, 6, 21, tzinfo=UTC))
 decision = coordinator.decide(snapshot, horizon_minutes=60)
 ```
 
-Пример показывает интерфейсы, а не новый real smoke: data/artifacts отсутствуют
-в текущем checkout. При текущих controls=false, неизвестных coverage policy и
-inventory промышленная рекомендация не разрешается даже при supported baseline.
+На момент завершения E разработчика 2 пример показывал только интерфейсы: локальные
+data/artifacts отсутствовали. После передачи E разработчика 1 они воспроизведены, и
+тот же production composition прошёл real smoke на `2026-08-06T21:00:00Z`.
+При controls=false, неизвестных coverage policy и inventory промышленная рекомендация
+по-прежнему не разрешается даже при supported baseline.
 
 ## Воспроизводимый пример результата и проверки
 
@@ -150,7 +152,9 @@ uv run pytest
 9 новых E-тестов проверяют точность текста, отсутствие вымышленных эффектов,
 все четыре исхода, отказ до модели при недостатке данных, repair без обещания
 экономии/безопасности, единицы, ссылки trace, operator payload и JSON round-trip.
-Последний общий прогон: 172 passed, 2 skipped; Ruff и ссылки документации проверены.
+Исторический прогон E разработчика 2: 172 passed, 2 skipped. После action-readiness E
+разработчика 1 было 173 passed; текущий интеграционный аудит — 174 passed, 2 skipped.
+Ruff прошёл.
 PostgreSQL opt-in тесты, миграции и реальный smoke в E не запускались; БД не менялась.
 
 Следующий собственный этап второго — F: проверить/дополнить repositories,

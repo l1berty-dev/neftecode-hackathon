@@ -26,7 +26,7 @@
 
 ### Реальное состояние репозитория
 
-Срез на 2026-09-15, проверенный по коду и последним фактическим проверкам:
+Срез на 2026-09-16, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train, SnapshotProvider, единый feature builder и
@@ -37,10 +37,16 @@
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
 - Пункт D первого разработчика реализован: HGB честно сравнен с persistence на validation;
   выбран победивший persistence baseline, создан empirical interval и отдельная test/ЛИМС-
-  оценка. Артефакты воспроизводятся `train` и не коммитятся. Действия не поддержаны до E.
+  оценка. Артефакты воспроизводятся `train` и не коммитятся. Последующий E подтвердил, что
+  действия остаются неподдержанными по versioned blockers, а не из-за отсутствия механизма.
   Маршрутов FastAPI/OpenAPI и frontend пока нет.
-- Статус маршрута разработчика 1: A–D завершены по текущей приёмке; следующий отдельный шаг —
-  E, совместная оценка эффекта действий. Завершение D само по себе не разрешает рекомендации.
+- Статус маршрута разработчика 1: A–E завершены по текущей приёмке. В E применимость действий
+  воспроизводимо проверена и заблокирована: данных недостаточно для защищаемой оценки эффекта.
+  Это штатный `unsupported` без чисел; следующий маршрут — F, CLI/FastAPI.
+- Артефакт E содержит train-only raw audit P8/T11/F19, отдельные blocker codes, невалидированное
+  предположение удержания 60 минут и явные null для joint-support k/threshold,
+  counterfactual uncertainty и transition response. Controls остаются `available=false`.
+  Подробнее: [ACTION_ASSESSMENT_V1.md](../ACTION_ASSESSMENT_V1.md).
 - Этап D разработчика 2 реализован: до 27 системных кандидатов плюс оператор,
   единый evaluator, отбор только admissible, сопоставимые цели и sourced tolerances,
   детерминированные tie-breaks, четыре исхода и до двух разных альтернатив.
@@ -53,12 +59,13 @@
   Trace связывает validation, baseline, generation, остальные evaluations и selection.
   Это не модель эффекта E первого; реальные controls остаются закрытыми.
   Передача API и воспроизводимый synthetic пример: [COORDINATOR_V1.md](../COORDINATOR_V1.md).
-- Последние проверки после E разработчика 2: Ruff check/format --check прошли; pytest — 172 passed,
-  2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
-  БД/миграции в D–E разработчика 2 не менялись и повторно не запускались.
-  `data/` и `artifacts/` в текущем checkout отсутствуют, новый реальный smoke не запускался.
+- Последние проверки после E разработчика 1: Ruff check/format --check прошли; pytest —
+  174 passed, 2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
+  БД/миграции в E не менялись и повторно не запускались. Локальные Git-ignored `data/processed/`
+  и `artifacts/` воспроизведены; реальный smoke Snapshot → QualityAgent → Evaluator →
+  Coordinator выполнен на `2026-08-06T21:00:00Z`.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
-- Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
+- Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md), [INTEGRATION_AUDIT_A_E.md](../INTEGRATION_AUDIT_A_E.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
 Перед работой проверьте текущий git diff и AGENTS.md, если он появится. Не удаляйте чужие изменения, не переписывайте исходники context, не коммитьте секреты, сырые данные, обученные бинарные модели и большие производные файлы без отдельной договорённости. Не создавайте свои копии чужих модулей при отсутствии готовой реализации: используйте согласованный интерфейс и тестовый двойник.
 
@@ -224,7 +231,8 @@ Replay в прототипе имеет один общий курсор для 
 3. Разработчик 2 передаёт evaluator/coordinator, работающие с инъекцией тестового QualityAgent. Первый проверяет совместимость реальной модели.
 4. Совместно утверждается каталог управлений. До этого механика генерации работает только в tests; реальные советы не считаются готовыми.
 5. Разработчик 1 передал continuation model, manifest, QualityAgent и отчёт. Второй подключает
-   их без переписывания собственного расчётного пути; action support остаётся отдельной E.
+   их без переписывания собственного расчётного пути. E отдельно проверил action support и
+   оставил его blocked; обходить этот результат в evaluator/coordinator нельзя.
 6. Полный цикл проверяется программно; затем первый оформляет API, второй делает UI по OpenAPI и общим примерам.
 7. Совместно: запуск на чистом окружении, три демонстрационных эпизода, репетиция.
 
@@ -433,7 +441,7 @@ pytest 122 passed, 2 skipped, Ruff check/format --check прошли. БД и к
   `uv run neftecode-hackathon train`. Публичный результат остаётся `QualityAssessment` из
   `contracts.py`; новый evaluator или DTO не создавался.
 - Активная model version:
-  `forecast-v1:9ade91386ad0311b3e3e60b061d34ffafd1cde188e32a268fb29c1f6b986fa0a`.
+  `forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365`.
   На validation HGB MAE 0.621067 проиграл persistence 0.573082, поэтому выбран baseline.
   Untouched test MAE 0.706412; nominal 0.90 interval дал test coverage 0.819032.
 - В `config/constraints.yaml` теперь `model_inputs_verified=true`; mandatory input — fresh valid
@@ -449,6 +457,28 @@ pytest 122 passed, 2 skipped, Ruff check/format --check прошли. БД и к
 
 Для собственного этапа D второго разработчика этот прогноз можно использовать в едином evaluator,
 но нельзя ранжировать непустые candidates по continuation baseline как по эффекту вмешательства.
+
+#### Передача action-readiness E от разработчика 1 (2026-09-16)
+
+- Новый model manifest содержит versioned train-only audit P8/T11/F19. Все три
+  `supported=false`; численные прогнозы действия не выдаются.
+- Причины доступны из `QualityAssessment.reasons`: неподтверждённая единица/шкала,
+  невалидированные held-setting episodes, отсутствие joint-support calibration,
+  counterfactual uncertainty и transition response. Persistence predictor инвариантен к actions.
+- Реальные controls должны остаться `available=false`, `action_support_verified=false`, без
+  диапазонов и шагов. Генератор/Coordinator второго разработчика менять для обхода этого отказа
+  нельзя; operator action идёт по прежнему единому evaluator path и будет rejected до модели.
+- Активные версии: model
+  `forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365`,
+  constraints `controls-v1-action-readiness-20260916`.
+- Методика, train-only диагностика и список условий активации:
+  [ACTION_ASSESSMENT_V1.md](../ACTION_ASSESSMENT_V1.md).
+
+**Интеграционный итог E:** дополнительный путь в evaluator/coordinator не нужен. Текущая
+pre-model проверка `available=false` и artifact-backed отказ QualityAgent согласованы и должны
+сохраняться. Разработчик 2 может переходить к собственному F persistence/replay; он не включает
+P8/T11/F19 и не создаёт synthetic fallback в production. При появлении новых единиц/шкал E
+переоткрывается совместно до изменения каталога, диапазонов, шагов или ranking tolerances.
 
 ### D. Генерация и ранжирование кандидатов
 
@@ -496,7 +526,8 @@ evaluator; результаты и причины отказов сохраня�
 `orchestration/explanation.py` строит текст только из вычисленных фактов:
 исход/проблема, настройки и свежесть, прогнозы/unknown с unit/basis, проверки,
 основание выбора, альтернативы и ограничения. Unknown не подменяется нулём,
-transition flag не представляется гарантией; action model E первого всё ещё нужен.
+transition flag не представляется гарантией. Последующий E первого подтвердил, что реальный
+counterfactual estimate недоступен; synthetic тесты второго не открывают controls.
 
 Trace содержит реальные validation/generation/evaluator/selection с ID-связями,
 результатами и причинами, не вымышленный диалог. Все evaluations представлены,

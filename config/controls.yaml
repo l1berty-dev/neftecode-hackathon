@@ -1,4 +1,4 @@
-constraint_version: "controls-v1-forecast-manifest-20260915"
+constraint_version: "controls-v1-action-readiness-20260916"
 controls:
   - signal_id: "ht:P8"
     name: "Полисеп. Р-202. Температура ГСС на входе"

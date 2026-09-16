@@ -119,8 +119,9 @@ decision = Coordinator(evaluator).decide(snapshot, operator_action, 60)
 актуализирован тест интеграции Coordinator в `tests/test_scenario_checks.py`.
 Численные диапазоны, tolerances, эффекты и агенты в тестах явно synthetic.
 Общий pytest: 163 passed, 2 skipped; Ruff check/format --check прошли.
-PostgreSQL opt-in тесты и новый smoke на реальной истории не запускались:
-`data/` и `artifacts/` в текущем checkout отсутствуют. Не заявляется доказанный
-эффект реального вмешательства. Перед активацией действий нужны совместный E
-первого разработчика, шкалы, train-only диапазоны/шаги, action support,
+На момент завершения D разработчика 2 PostgreSQL opt-in тесты и новый smoke на реальной
+истории не запускались, а `data/` и `artifacts/` отсутствовали. После E разработчика 1
+локальные артефакты воспроизведены и production composition прошёл real smoke; action-readiness
+остался blocked. Не заявляется доказанный эффект реального вмешательства. Перед активацией
+действий нужны подтверждённые шкалы, train-only диапазоны/шаги, action support,
 обоснованные tolerances, coverage policy и утверждённый inventory hard checks.

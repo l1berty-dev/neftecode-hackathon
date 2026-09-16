@@ -17,11 +17,12 @@ from neftecode_hackathon.contracts import (
     ProcessSnapshot,
     QualityAssessment,
 )
+from neftecode_hackathon.quality.action_support import action_rejection_reasons
 from neftecode_hackathon.quality.features import ForecastFeatureBuilder, ForecastFeatureConfig
 
 
 class ForecastQualityAgent:
-    """Serve a trained continuation forecast; action effects remain unsupported until E."""
+    """Serve continuation forecasts and explicit artifact-backed action refusals."""
 
     def __init__(self, artifacts_directory: Path, *, model_config_path: Path) -> None:
         artifacts_directory = artifacts_directory.resolve()
@@ -35,6 +36,8 @@ class ForecastQualityAgent:
             raise ValueError("model.joblib and manifest.json select different predictors")
         if list(payload["active_features"]) != self.manifest["active_features"]:
             raise ValueError("model.joblib and manifest.json active features do not match")
+        if self.manifest.get("action_support", {}).get("schema_version") != 1:
+            raise ValueError("manifest action-support audit is missing or unsupported")
         if self._sha256(model_config_path) != self.manifest["model_config_sha256"]:
             raise ValueError("runtime model configuration does not match the trained manifest")
         model_config = yaml.safe_load(model_config_path.read_text(encoding="utf-8"))
@@ -65,8 +68,9 @@ class ForecastQualityAgent:
             reasons.append("Artifact supports only the configured 60-minute horizon.")
         if action.changes:
             applicability = Applicability.UNSUPPORTED
+            reasons.extend(action_rejection_reasons(action, self.manifest["action_support"]))
             reasons.append(
-                "The continuation model does not establish effects of interventions; action assessment belongs to route E."
+                "No counterfactual prediction is exposed; the continuation model does not establish intervention effects."
             )
         if snapshot.dataset_version != self.manifest["dataset_version"]:
             applicability = Applicability.INSUFFICIENT_DATA

@@ -26,7 +26,7 @@
 
 ### Реальное состояние репозитория
 
-Срез на 2026-09-15, проверенный по коду и последним фактическим проверкам:
+Срез на 2026-09-16, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train, SnapshotProvider, единый feature builder и
@@ -37,10 +37,16 @@
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
 - Пункт D первого разработчика реализован: HGB честно сравнен с persistence на validation;
   выбран победивший persistence baseline, создан empirical interval и отдельная test/ЛИМС-
-  оценка. Артефакты воспроизводятся `train` и не коммитятся. Действия не поддержаны до E.
+  оценка. Артефакты воспроизводятся `train` и не коммитятся. Последующий E подтвердил, что
+  действия остаются неподдержанными по versioned blockers, а не из-за отсутствия механизма.
   Маршрутов FastAPI/OpenAPI и frontend пока нет.
-- Статус маршрута разработчика 1: A–D завершены по текущей приёмке; следующий отдельный шаг —
-  E, совместная оценка эффекта действий. Завершение D само по себе не разрешает рекомендации.
+- Статус маршрута разработчика 1: A–E завершены по текущей приёмке. В E применимость действий
+  воспроизводимо проверена и заблокирована: данных недостаточно для защищаемой оценки эффекта.
+  Это штатный `unsupported` без чисел; следующий маршрут — F, CLI/FastAPI.
+- Артефакт E содержит train-only raw audit P8/T11/F19, отдельные blocker codes, невалидированное
+  предположение удержания 60 минут и явные null для joint-support k/threshold,
+  counterfactual uncertainty и transition response. Controls остаются `available=false`.
+  Подробнее: [ACTION_ASSESSMENT_V1.md](../ACTION_ASSESSMENT_V1.md).
 - Этап D разработчика 2 реализован: до 27 системных кандидатов плюс оператор,
   единый evaluator, отбор только admissible, сопоставимые цели и sourced tolerances,
   детерминированные tie-breaks, четыре исхода и до двух разных альтернатив.
@@ -53,12 +59,13 @@
   Trace связывает validation, baseline, generation, остальные evaluations и selection.
   Это не модель эффекта E первого; реальные controls остаются закрытыми.
   Передача API и воспроизводимый synthetic пример: [COORDINATOR_V1.md](../COORDINATOR_V1.md).
-- Последние проверки после E разработчика 2: Ruff check/format --check прошли; pytest — 172 passed,
-  2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
-  БД/миграции в D–E разработчика 2 не менялись и повторно не запускались.
-  `data/` и `artifacts/` в текущем checkout отсутствуют, новый реальный smoke не запускался.
+- Последние проверки после E разработчика 1: Ruff check/format --check прошли; pytest —
+  174 passed, 2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
+  БД/миграции в E не менялись и повторно не запускались. Локальные Git-ignored `data/processed/`
+  и `artifacts/` воспроизведены; реальный smoke Snapshot → QualityAgent → Evaluator →
+  Coordinator выполнен на `2026-08-06T21:00:00Z`.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
-- Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
+- Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md), [INTEGRATION_AUDIT_A_E.md](../INTEGRATION_AUDIT_A_E.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
 Перед работой проверьте текущий git diff и AGENTS.md, если он появится. Не удаляйте чужие изменения, не переписывайте исходники context, не коммитьте секреты, сырые данные, обученные бинарные модели и большие производные файлы без отдельной договорённости. Не создавайте свои копии чужих модулей при отсутствии готовой реализации: используйте согласованный интерфейс и тестовый двойник.
 
@@ -224,7 +231,8 @@ Replay в прототипе имеет один общий курсор для 
 3. Разработчик 2 передаёт evaluator/coordinator, работающие с инъекцией тестового QualityAgent. Первый проверяет совместимость реальной модели.
 4. Совместно утверждается каталог управлений. До этого механика генерации работает только в tests; реальные советы не считаются готовыми.
 5. Разработчик 1 передал continuation model, manifest, QualityAgent и отчёт. Второй подключает
-   их без переписывания собственного расчётного пути; action support остаётся отдельной E.
+   их без переписывания собственного расчётного пути. E отдельно проверил action support и
+   оставил его blocked; обходить этот результат в evaluator/coordinator нельзя.
 6. Полный цикл проверяется программно; затем первый оформляет API, второй делает UI по OpenAPI и общим примерам.
 7. Совместно: запуск на чистом окружении, три демонстрационных эпизода, репетиция.
 
@@ -517,7 +525,7 @@ JSON-артефактах.
 - Команда `uv run neftecode-hackathon train` читает подготовленные Parquet и воспроизводимо
   создаёт Git-ignored `artifacts/model.joblib`, `manifest.json`, `metrics.json` и
   `model_report.md`. Model version:
-  `forecast-v1:9ade91386ad0311b3e3e60b061d34ffafd1cde188e32a268fb29c1f6b986fa0a`.
+  `forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365`.
 - Target — только exact `pak:ht.product_sulfur` на t+60 минут, без интерполяции. Из 189 649
   корректных уникальных targets получено 189 643 origin/target-пары; шесть origins без точного
   будущего значения исключены с подсчётом.
@@ -543,7 +551,8 @@ JSON-артефактах.
   результат только как label: 217 test-сопоставлений, MAE 1.676522 мг/кг, coverage 0.552995.
 - `ForecastQualityAgent` проверяет dataset/model/config versions и feature schema, запрещает
   replay до test boundary, другой горизонт и непустое действие. Для baseline на реальном
-  snapshot он вернул supported прогноз; непустой action штатно unsupported до E.
+  snapshot он вернул supported прогноз; на момент D непустой action был unsupported. E ниже
+  сохранил этот отказ, но заменил общую причину на versioned train-only audit.
 - Scenario policy получила verified manifest с единственным mandatory input:
   fresh valid `pak:ht.product_sulfur`, `mg/kg`, age <=1200 s. Реальный snapshot теперь имеет
   completeness 1 при свежем ПАК. Сквозной evaluator остаётся `not_assessable` по
@@ -566,6 +575,44 @@ JSON-артефактах.
 - Встречи с ментором не останавливают загрузку, прогноз, контракты и API; но блокируют включение спорного управления.
 
 Приёмка: для каждого доступного действия есть проверяемое обоснование и support policy; unsupported возвращается штатно, без фиктивных чисел.
+
+#### Фактически выполнено по пункту E (2026-09-16)
+
+Исходные требования E выше сохранены. Реализация завершена как проверяемая блокировка, потому
+что текущие данные не позволяют защитить counterfactual effect:
+
+- В `config/model.yaml` зафиксированы три подтверждённых по смыслу управления и предположение
+  удержания нового абсолютного значения 60 минут с исходным шагом данных 10 минут.
+- `quality/action_support.py` строит только по train versioned audit и добавляет его в
+  `manifest.json`/`metrics.json`. Validation/final test не используются для диапазонов,
+  определения эпизодов удержания или порогов поддержки.
+- Исходный XLSX и data dictionary не содержат единиц/масштабирования. Train-медианы в сырой
+  шкале: P8 0.156903, T11 362.880341, F19 212.040016. Они не объявлены физическими значениями
+  и не перенесены в control ranges.
+- Строгое диагностическое удержание семь одинаковых точек от t до t+60 найдено 0 раз для P8,
+  54 раза для T11 и 2 318 раз для F19 из 132 750 origins. Без допуска измерительного шума это
+  не валидированные intervention episodes.
+- Manifest оставляет scaler/k/leave-one-out threshold, counterfactual coverage и transition
+  response null. Выбранный persistence predictor не зависит от P8/T11/F19.
+- `ForecastQualityAgent` возвращает для непустого action `unsupported` с причинами по каждому
+  сигналу и без prediction/lower/upper. Результат одинаков для равных changes разных
+  origin/label; snapshot/history не изменяются.
+- ScenarioEvaluator по-прежнему отклоняет реальные actions до модели через `available=false`;
+  Coordinator не может выбрать их по фиктивным числам. Реальный smoke: baseline quality
+  supported, baseline evaluation not_assessable; action P8 rejected; Decision
+  `no_feasible_option`, preferred null.
+- Активные версии: model
+  `forecast-v1:cc3ac51f6ded1960700f3893e7bc0c7c91224cf3cf05eac09646d45fb60a4365`,
+  constraints `controls-v1-action-readiness-20260916`.
+
+Полное обоснование блокировки и условия активации:
+[ACTION_ASSESSMENT_V1.md](../ACTION_ASSESSMENT_V1.md).
+
+**Итог приёмки E:** выполнено fail-closed. Внутреннего незавершённого action path не осталось:
+baseline прогнозируется, каждый непустой action получает versioned отказ без чисел, а общий
+evaluator не может его обойти. Для численной активации нужна новая внешняя evidence-передача
+по единицам/шкалам и переходу, после которой E должен быть переоткрыт и перекалиброван только
+на train/validation. Эти входы не считаются задачей F и не подменяются API-логикой.
 
 ### F. Собрать CLI и FastAPI
 

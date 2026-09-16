@@ -57,3 +57,9 @@ training:
     learning_rate: 0.05
     l2_regularization: 1.0
     early_stopping: false
+
+action_assessment:
+  # Organizer-confirmed control meanings; numerical units/scales remain unverified.
+  controls: [ht:P8, ht:T11, ht:F19]
+  hold_minutes: 60
+  sample_interval_minutes: 10
