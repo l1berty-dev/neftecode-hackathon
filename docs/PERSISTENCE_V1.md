@@ -121,7 +121,8 @@ ephemeral port/volume, выполняет `alembic upgrade head` и `alembic che
 restart, stale expected_snapshot_id двух Session, episode/FK conflicts и отказ
 при рассогласовании структурированной колонки с JSONB payload.
 
-Реальный replay по Parquet не запускался: `data/processed/` и model artifacts в
-checkout отсутствуют. API/frontend ещё не реализованы. Следующий этап второго —
-G frontend после актуального OpenAPI первого. Первый разработчик подключает эти
-repositories к FastAPI, не копируя транзакционную логику.
+На этапе H `prepare/train` и production composition A–E повторно прошли, а
+PostgreSQL 17 тесты снова дали 6 passed. Frontend G реализован, но FastAPI/OpenAPI
+по-прежнему отсутствуют, поэтому HTTP E2E с repositories не выполнен. Первый
+разработчик подключает эти repositories к FastAPI, не копируя транзакционную
+логику. Актуальная матрица: [FINAL_VERIFICATION_V1.md](FINAL_VERIFICATION_V1.md).

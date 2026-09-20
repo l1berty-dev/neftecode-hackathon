@@ -72,13 +72,19 @@
   редактирование ставит replay на паузу, save использует server decision_id.
   Из-за отсутствия FastAPI/OpenAPI временные transport envelopes изолированы, реальный
   E2E не заявлен. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
-- Последние проверки после G: Ruff check/format --check прошли; обычный pytest —
+- Этап H проверен в доступной интеграционной границе: prepare/train и реальная
+  композиция A–E воспроизведены, PostgreSQL 17 повторно проверен, frontend получил
+  race/history и contract-drift тесты. Полный HTTP/browser E2E заблокирован отсутствующими
+  FastAPI/OpenAPI разработчика 1 и не считается выполненным. Матрица и команды:
+  [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
+- Последние проверки после H: Ruff check/format --check прошли; обычный pytest —
   174 passed, 6 skipped. Отдельно PostgreSQL 17 — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
-  Frontend: typecheck прошёл, 7 tests passed, production build прошёл.
+  Frontend: contract drift/typecheck прошли, 9 tests passed, production build прошёл.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
-  сейчас Git-ignored `data/processed/` и `artifacts/` в checkout отсутствуют.
+  Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
+  локально воспроизведены командами prepare/train.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
 - Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md), [INTEGRATION_AUDIT_A_E.md](../INTEGRATION_AUDIT_A_E.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
@@ -659,6 +665,19 @@ UX:
 До готовности API допустимы fixture responses для UI-разработки, но mock mode имеет заметную маркировку и не включён по умолчанию в финальной сборке.
 
 ### H. Тесты и финальная передача
+
+Статус на 2026-09-20: доступная часть H выполнена. Добавлена проверка drift между
+общей JSON Schema и generated TypeScript, а UI-тест воспроизводит настоящую гонку:
+Promise старого action завершается после перехода к новому snapshot и не меняет
+новый Decision. История проверена на загрузку server Decision вместе с исходным
+snapshot. Frontend: 9 tests, typecheck, build. Повторно прошли prepare/train,
+real smoke A–E и 6/6 на отдельном PostgreSQL 17.
+
+Полная приёмка H остаётся `integration blocked`: разработчик 1 ещё не реализовал
+FastAPI/OpenAPI, поэтому невозможно честно выполнить browser → API → PostgreSQL,
+HTTP status/error matrix и реальные response fixtures. Не заменять это fixture E2E.
+Точная матрица, команды и список передачи первому:
+[FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
 
 Unit:
 - no-op action;

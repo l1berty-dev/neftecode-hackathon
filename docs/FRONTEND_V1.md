@@ -65,8 +65,9 @@ npm test
 npm run build
 ```
 
-На срезе 2026-09-20 прошли TypeScript typecheck, 7 тестов в 4 файлах и production
-build Vite. Проверены generation gate позднего ответа, стабильный request key,
+На срезе 2026-09-20 прошли TypeScript typecheck, 9 тестов в 4 файлах и production
+build Vite. Проверены drift generated contracts, реальная UI-гонка позднего ответа,
+стабильный request key и открытие истории с исходным snapshot,
 отображение unknown, отсутствие вымышленной прогнозной линии, неподдерживаемый
 прогноз, маркировка fixture, save по decision_id и отдельное представление ошибки API.
 

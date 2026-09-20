@@ -1,13 +1,20 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import fixture from "../../examples/contract_v1.synthetic.json";
 import App from "./App";
+import type { ContractExample, Decision } from "./api/contracts.generated";
 import { FixtureApi } from "./api/fixture";
+import type { Api, DecideRequest, DecisionResponse, ProcessSnapshot } from "./api/types";
 import { ApiError } from "./api/types";
+
+const sample = fixture as unknown as ContractExample;
+
+afterEach(() => vi.useRealTimers());
 
 describe("App", () => {
   it("marks fixture mode and saves by the server decision id", async () => {
-    const api = new FixtureApi();
+    const api: Api = new FixtureApi();
     const save = vi.spyOn(api, "saveDecision");
     const user = userEvent.setup();
     render(<App api={api} fixtureMode />);
@@ -21,11 +28,123 @@ describe("App", () => {
   });
 
   it("shows an API failure as an error, not as a technological decision", async () => {
-    const api = new FixtureApi();
+    const api: Api = new FixtureApi();
     vi.spyOn(api, "health").mockRejectedValue(new ApiError("Backend недоступен", 503, "UNAVAILABLE"));
     render(<App api={api} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Backend недоступен");
     expect(screen.queryByText("Нет допустимого варианта")).not.toBeInTheDocument();
+  });
+
+  it("opens saved history with its original snapshot", async () => {
+    const api = new FixtureApi();
+    await api.saveDecision(sample.decision.decision_id);
+    const loadDecision = vi.spyOn(api, "decision");
+    const loadSnapshot = vi.spyOn(api, "snapshot");
+    const user = userEvent.setup();
+    render(<App api={api} />);
+
+    const historyItem = await screen.findByRole("button", {
+      name: /Открыть исходный снимок/,
+    });
+    await user.click(historyItem);
+
+    await waitFor(() => {
+      expect(loadDecision).toHaveBeenCalledWith(sample.decision.decision_id);
+      expect(loadSnapshot).toHaveBeenCalledWith(sample.snapshot.snapshot_id);
+    });
+  });
+
+  it("does not let a late response for an old snapshot overwrite a new comparison", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const newerSnapshot: ProcessSnapshot = {
+      ...sample.snapshot,
+      snapshot_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      as_of: "2026-01-15T09:10:00Z",
+    };
+    let currentCalls = 0;
+    let resolveOld!: (value: DecisionResponse) => void;
+    const oldRequest = new Promise<DecisionResponse>((resolve) => {
+      resolveOld = resolve;
+    });
+    const newerDecision: Decision = {
+      ...sample.decision,
+      decision_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      snapshot_id: newerSnapshot.snapshot_id,
+      preferred: sample.decision.preferred
+        ? {
+            ...sample.decision.preferred,
+            snapshot_id: newerSnapshot.snapshot_id,
+            action: { ...sample.decision.preferred.action, label: "Совет для нового снимка" },
+          }
+        : null,
+      baseline: { ...sample.decision.baseline, snapshot_id: newerSnapshot.snapshot_id },
+    };
+    const api: Api = new FixtureApi();
+    vi.spyOn(api, "controls").mockResolvedValue({
+      constraint_version: sample.decision.constraint_version,
+      controls: [
+        {
+          signal_id: "ht:F26",
+          label: "Тестовая уставка",
+          available: true,
+          reason: null,
+          unit: "m3/h",
+          min: 200,
+          max: 300,
+          step: 1,
+          source: "test",
+        },
+      ],
+    });
+    vi.spyOn(api, "currentSnapshot").mockImplementation(async () => {
+      currentCalls += 1;
+      const next = currentCalls === 1 ? sample.snapshot : newerSnapshot;
+      return { snapshot: next, current_snapshot_id: next.snapshot_id };
+    });
+    vi.spyOn(api, "decide").mockImplementation(async (request: DecideRequest) => {
+      if (request.snapshot_id === newerSnapshot.snapshot_id) {
+        return {
+          decision: newerDecision,
+          current_snapshot_id: newerSnapshot.snapshot_id,
+          stale: false,
+        };
+      }
+      if (request.operator_action) return oldRequest;
+      return {
+        decision: sample.decision,
+        current_snapshot_id: sample.snapshot.snapshot_id,
+        stale: false,
+      };
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<App api={api} />);
+
+    const input = await screen.findByRole("spinbutton", { name: /Новое значение/ });
+    await user.clear(input);
+    await user.type(input, "251");
+    await user.click(screen.getByRole("button", { name: "Сравнить варианты" }));
+
+    await act(async () => vi.advanceTimersByTime(5000));
+    const moveButton = await screen.findByRole("button", { name: "Перейти к новому снимку" });
+    await user.click(moveButton);
+    expect((await screen.findAllByText("Совет для нового снимка")).length).toBeGreaterThan(0);
+
+    await act(async () => {
+      resolveOld({
+        decision: {
+          ...sample.decision,
+          preferred: sample.decision.preferred && {
+            ...sample.decision.preferred,
+            action: { ...sample.decision.preferred.action, label: "Устаревший совет" },
+          },
+        },
+        current_snapshot_id: newerSnapshot.snapshot_id,
+        stale: true,
+      });
+      await Promise.resolve();
+    });
+    expect(screen.queryByText("Устаревший совет")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Совет для нового снимка").length).toBeGreaterThan(0);
   });
 });

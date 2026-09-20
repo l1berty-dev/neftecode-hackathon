@@ -21,6 +21,8 @@ Parquet/JSON-артефакты в `data/processed/`. Этот каталог и
 [docs/ACTION_ASSESSMENT_V1.md](docs/ACTION_ASSESSMENT_V1.md).
 Экран советчика, его проверенные команды и граница интеграции с ещё не реализованным
 FastAPI: [docs/FRONTEND_V1.md](docs/FRONTEND_V1.md).
+Итоговая матрица H с фактически пройденными проверками и оставшимся API-блокером:
+[docs/FINAL_VERIFICATION_V1.md](docs/FINAL_VERIFICATION_V1.md).
 Матрица передач между разработчиками и список следующих незакрытых этапов:
 [docs/INTEGRATION_AUDIT_A_E.md](docs/INTEGRATION_AUDIT_A_E.md).
 

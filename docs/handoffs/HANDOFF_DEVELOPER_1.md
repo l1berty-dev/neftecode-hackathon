@@ -72,13 +72,19 @@
   редактирование ставит replay на паузу, save использует server decision_id.
   Из-за отсутствия FastAPI/OpenAPI временные transport envelopes изолированы, реальный
   E2E не заявлен. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
-- Последние проверки после G: Ruff check/format --check прошли; обычный pytest —
+- Этап H проверен в доступной интеграционной границе: prepare/train и реальная
+  композиция A–E воспроизведены, PostgreSQL 17 повторно проверен, frontend получил
+  race/history и contract-drift тесты. Полный HTTP/browser E2E заблокирован отсутствующими
+  FastAPI/OpenAPI разработчика 1 и не считается выполненным. Матрица и команды:
+  [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
+- Последние проверки после H: Ruff check/format --check прошли; обычный pytest —
   174 passed, 6 skipped. Отдельно PostgreSQL 17 — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
-  Frontend: typecheck прошёл, 7 tests passed, production build прошёл.
+  Frontend: contract drift/typecheck прошли, 9 tests passed, production build прошёл.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
-  сейчас Git-ignored `data/processed/` и `artifacts/` в checkout отсутствуют.
+  Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
+  локально воспроизведены командами prepare/train.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
 - Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md), [INTEGRATION_AUDIT_A_E.md](../INTEGRATION_AUDIT_A_E.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
@@ -663,6 +669,13 @@ CLI использует те же сервисы и оценку, что API; �
 9. Передать frontend-разработчику OpenAPI, примеры четырёх исходов и команду запуска backend.
 
 ### G. Завершить проверку и документацию
+
+**Статус H на 2026-09-20:** доступная проверка выполнена, но общая приёмка
+integration-blocked твоим незавершённым F. Повторно прошли prepare/train, production
+composition A–E, 174 обычных теста, 6 тестов на отдельном PostgreSQL 17 и 9 frontend
+тестов/build. FastAPI routes, OpenAPI и HTTP/browser E2E отсутствуют; именно их надо
+завершить по списку в [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md), после
+чего второй разработчик заменит временный transport boundary и повторит общий путь.
 
 Твои тесты:
 - обе Excel-структуры разбираются независимо по времени;
