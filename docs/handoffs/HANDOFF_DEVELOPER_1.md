@@ -41,7 +41,8 @@
   выбран победивший persistence baseline, создан empirical interval и отдельная test/ЛИМС-
   оценка. Артефакты воспроизводятся `train` и не коммитятся. Последующий E подтвердил, что
   действия остаются неподдержанными по versioned blockers, а не из-за отсутствия механизма.
-  Маршрутов FastAPI/OpenAPI и frontend пока нет.
+  Маршрутов FastAPI/OpenAPI пока нет. Этап G второго разработчика собрал frontend
+  против согласованного HTTP-контракта; реальный backend E2E остаётся зависимостью от F первого.
 - Статус маршрута разработчика 1: A–E завершены по текущей приёмке. В E применимость действий
   воспроизводимо проверена и заблокирована: данных недостаточно для защищаемой оценки эффекта.
   Это штатный `unsupported` без чисел; следующий маршрут — F, CLI/FastAPI.
@@ -64,9 +65,17 @@
 - Этап F разработчика 2 реализован без изменения схемы: атомарная запись полного
   расчёта/rollback, immutable cross-check колонок и JSONB, идемпотентный save,
   history list и конкурентный replay. Передача API: [PERSISTENCE_V1.md](../PERSISTENCE_V1.md).
-- Последние проверки после F: Ruff check/format --check прошли; обычный pytest —
+- Этап G разработчика 2 реализован: React/TypeScript/Vite экран replay, Decision,
+  отдельной прогнозной точки, сравнения, каталога управлений, details и истории.
+  Доменные типы генерируются из общей JSON Schema; HTTP adapter единый, fixture
+  явно маркирован и выключен по умолчанию. Late responses защищены abort + generation key,
+  редактирование ставит replay на паузу, save использует server decision_id.
+  Из-за отсутствия FastAPI/OpenAPI временные transport envelopes изолированы, реальный
+  E2E не заявлен. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
+- Последние проверки после G: Ruff check/format --check прошли; обычный pytest —
   174 passed, 6 skipped. Отдельно PostgreSQL 17 — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
+  Frontend: typecheck прошёл, 7 tests passed, production build прошёл.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   сейчас Git-ignored `data/processed/` и `artifacts/` в checkout отсутствуют.
@@ -627,6 +636,13 @@ evaluator не может его обойти. Для численной акт�
 `ReplayRepository` для expected_snapshot_id; не копируй транзакционную логику
 в routes. Интерфейсы, ошибки конкурентности и проверенные команды:
 [PERSISTENCE_V1.md](../PERSISTENCE_V1.md). Схема остаётся Alembic 0001.
+
+**Frontend G второго разработчика готов к интеграции, но не является доказательством
+готовности API.** Он использует `/api/v1` и таблицу общего HTTP-контракта; доменные
+типы уже генерируются из общей JSON Schema. Текущие transport envelopes временные:
+реализуй routes, опубликуй актуальный OpenAPI и передай примеры ответов/ошибок, после
+чего второй разработчик заменит boundary генерацией и выполнит реальный E2E.
+Команды и точная граница: [FRONTEND_V1.md](../FRONTEND_V1.md).
 
 Предусмотреть команды (конкретные имена фиксируются здесь):
 - `uv run neftecode-hackathon prepare`

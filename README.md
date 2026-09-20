@@ -19,6 +19,8 @@ Parquet/JSON-артефакты в `data/processed/`. Этот каталог и
 фактические метрики: [docs/FORECAST_MODEL_V1.md](docs/FORECAST_MODEL_V1.md).
 Проверка применимости управляющих действий и причины их текущей блокировки:
 [docs/ACTION_ASSESSMENT_V1.md](docs/ACTION_ASSESSMENT_V1.md).
+Экран советчика, его проверенные команды и граница интеграции с ещё не реализованным
+FastAPI: [docs/FRONTEND_V1.md](docs/FRONTEND_V1.md).
 Матрица передач между разработчиками и список следующих незакрытых этапов:
 [docs/INTEGRATION_AUDIT_A_E.md](docs/INTEGRATION_AUDIT_A_E.md).
 
@@ -35,6 +37,20 @@ uv run ruff format --check .
 uv run pytest
 uv run pre-commit run --all-files
 ```
+
+Frontend проверяется отдельно:
+
+```bash
+cd frontend
+npm ci
+npm run typecheck
+npm test
+npm run build
+```
+
+Реальный API-режим включён по умолчанию и ожидает `/api/v1`. До появления FastAPI
+доступен только явно включаемый synthetic preview через `VITE_USE_FIXTURE=true`;
+он помечен в интерфейсе и не имитирует расчёт пользовательских воздействий.
 
 Автоматически исправить lint-ошибки и отформатировать код:
 
