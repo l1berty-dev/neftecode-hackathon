@@ -51,9 +51,14 @@ class ForecastQualityAgent:
         self.model_version = str(payload["model_version"])
 
     @classmethod
-    def from_repository(cls, root: Path | None = None) -> ForecastQualityAgent:
+    def from_repository(
+        cls, root: Path | None = None, *, artifacts_directory: Path | None = None
+    ) -> ForecastQualityAgent:
         repository = (root or Path(__file__).resolve().parents[3]).resolve()
-        return cls(repository / "artifacts", model_config_path=repository / "config" / "model.yaml")
+        return cls(
+            artifacts_directory or repository / "artifacts",
+            model_config_path=repository / "config" / "model.yaml",
+        )
 
     def assess(
         self, snapshot: ProcessSnapshot, action: Action, horizon_minutes: int

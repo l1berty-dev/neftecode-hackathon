@@ -1,24 +1,24 @@
 # Этап H — итоговая проверка и передача
 
 Дата среза: 2026-09-20. Этот документ фиксирует только фактически выполненные
-проверки текущего `main`. Он не объявляет готовыми отсутствующие FastAPI routes,
-OpenAPI или браузерный E2E с backend.
+проверки текущего `main`. FastAPI/OpenAPI добавлены после исходного H-аудита;
+полный браузерный E2E с backend/PostgreSQL всё ещё не объявляется выполненным.
 
 ## Результат проверки
 
 | Контур | Результат | Что доказано |
 |---|---:|---|
 | Python lint/format | passed | `ruff check` и `ruff format --check` для репозитория |
-| Python unit/integration без внешней БД | 174 passed, 6 skipped | Контракты, point-in-time данные, обучение, action fail-closed, сценарии, ranking, coordinator |
+| Python unit/integration без внешней БД | 181 passed, 6 skipped | Контракты, point-in-time данные, обучение, action fail-closed, сценарии, ranking, coordinator, CLI/FastAPI/OpenAPI |
 | PostgreSQL 17 | 6 passed | Alembic с нуля/check, JSONB/TIMESTAMPTZ/FK, rollback, reconnect, save/history, конкурентный replay |
-| Frontend unit/UI | 9 passed | Ошибка API отдельно от бизнес-отказа, unknown, save ID, исходный snapshot истории, прогноз без вымышленной линии, stale race |
-| Frontend type/build | passed | TypeScript typecheck и production Vite build |
+| Frontend unit/UI | 9 passed ранее; текущий повтор environment-blocked | У второго разработчика тесты прошли; локальный Node 20.18.1 не удовлетворяет требованию зафиксированных Vite/jsdom >=20.19.0, поэтому текущий Vitest не стартовал |
+| Frontend type/build | passed | TypeScript typecheck и production Vite build; Vite при сборке также предупреждает обновить Node до >=20.19.0 |
 | Contract drift | passed | Сгенерированный TypeScript совпадает с `examples/contract_v1.schema.json` |
 | Данные | passed | `prepare`: dataset `sha256:733562b...a6a6c`, 18 354 049 telemetry rows, 301 904 analyses, 6 events |
 | Модель | passed | `train`: persistence baseline, validation MAE 0.573082, test MAE 0.706412, прежняя version hash воспроизведена |
 | Production composition A–E | passed | Реальный snapshot на `2026-08-06T21:00:00Z` → QualityAgent → Evaluator → Coordinator |
-| HTTP/OpenAPI E2E | blocked | В репозитории отсутствуют FastAPI routes, `serve`, OpenAPI и HTTP-тесты |
-| Browser → API → PostgreSQL | blocked | Нельзя проверять без предыдущего пункта; fixture не считается E2E |
+| HTTP/OpenAPI | passed без внешней БД | 11 routes, request validation, structured errors, readiness и checked-in OpenAPI покрыты HTTP-тестами |
+| Browser → API → PostgreSQL | pending | Все части реализованы, но общий процесс с настоящей БД и браузером ещё не прогнан; fixture не считается E2E |
 
 PostgreSQL проверялся на отдельном временном Compose project с PostgreSQL 17.
 Fixture удалил только созданные им project/volume; SQLite и пользовательская БД
@@ -73,20 +73,17 @@ npm run build
 `RUN_POSTGRES_TESTS=1` требует работающий Docker. Обычный `pytest` намеренно
 пропускает шесть opt-in PostgreSQL-тестов.
 
-## Что должен завершить разработчик 1 до полной приёмки H
+## Что остаётся до полной приёмки H
 
-1. Реализовать CLI `evaluate`/`serve` и все routes общего HTTP-контракта через
-   существующие Coordinator и repositories, без параллельной бизнес-логики.
-2. Экспортировать актуальный OpenAPI и добавить HTTP-тесты 404/409/422/503,
-   snapshot/horizon/stale и четырёх DecisionStatus.
-3. Передать реальные response fixtures. Разработчик 2 заменит временные transport
-   envelopes frontend генерацией из OpenAPI.
-4. Выполнить один общий E2E: миграция → replay snapshot → Decision → operator
+1. Выполнить один общий E2E: миграция → replay snapshot → Decision → operator
    action → save → history, затем тот же путь из браузера.
-5. Подготовить несколько изменяемых демонстрационных эпизодов. Искусственно
+2. Зафиксировать реальные ответы достижимых статусов и HTTP 404/409/422/503 в E2E.
+3. При необходимости добавить OpenAPI-codegen transport envelope для frontend;
+   текущие изолированные типы уже сверены с опубликованной схемой.
+4. Подготовить дополнительные демонстрационные эпизоды. Искусственно
    испорченный сценарий маркировать synthetic; реальные actions не открывать до
    появления подтверждённой action-support evidence.
 
-До выполнения этих пунктов H имеет статус **частично выполнен / integration
-blocked**, а не «готовый продукт». Блокер находится в отсутствующем API, а не в
-PostgreSQL, frontend или чистом расчётном цикле.
+До выполнения этих пунктов H имеет статус **частично выполнен / E2E pending**, а не
+«готовый продукт». Прежний API-блокер снят; оставшаяся работа — проверка собранных частей
+в одном запущенном окружении.

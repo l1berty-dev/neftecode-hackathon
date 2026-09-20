@@ -122,7 +122,7 @@ restart, stale expected_snapshot_id двух Session, episode/FK conflicts и о
 при рассогласовании структурированной колонки с JSONB payload.
 
 На этапе H `prepare/train` и production composition A–E повторно прошли, а
-PostgreSQL 17 тесты снова дали 6 passed. Frontend G реализован, но FastAPI/OpenAPI
-по-прежнему отсутствуют, поэтому HTTP E2E с repositories не выполнен. Первый
-разработчик подключает эти repositories к FastAPI, не копируя транзакционную
-логику. Актуальная матрица: [FINAL_VERIFICATION_V1.md](FINAL_VERIFICATION_V1.md).
+PostgreSQL 17 тесты снова дали 6 passed. Frontend G и FastAPI/OpenAPI реализованы;
+backend использует CalculationRepository и ReplayRepository без копирования транзакционной
+логики. Полный browser/API/PostgreSQL E2E ещё не выполнен. Актуальная матрица:
+[FINAL_VERIFICATION_V1.md](FINAL_VERIFICATION_V1.md).

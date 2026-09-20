@@ -71,7 +71,11 @@ class SnapshotProvider:
 
     @classmethod
     def from_repository(
-        cls, root: Path | None = None, *, policy: ScenarioPolicy | None = None
+        cls,
+        root: Path | None = None,
+        *,
+        policy: ScenarioPolicy | None = None,
+        processed_directory: Path | None = None,
     ) -> SnapshotProvider:
         """Construct from the repository config and developer-2's validated policy."""
 
@@ -92,7 +96,7 @@ class SnapshotProvider:
             for item in constraints.required_inputs
         )
         return cls(
-            repository / "data" / "processed",
+            processed_directory or repository / "data" / "processed",
             history_minutes=model_config["forecast"]["history_minutes"],
             freshness_minutes=model_config["availability"]["freshness_minutes"],
             required_inputs=required,

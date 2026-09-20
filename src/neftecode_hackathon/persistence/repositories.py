@@ -8,7 +8,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from neftecode_hackathon.contracts import Decision, ProcessSnapshot
+from neftecode_hackathon.contracts import Decision, ProcessSnapshot, ScenarioEvaluation
 from neftecode_hackathon.persistence.models import (
     DecisionRow,
     EvaluationRow,
@@ -26,6 +26,13 @@ class ReplayPosition:
     episode_id: str
     current_snapshot_id: UUID
     position: int
+
+
+@dataclass(frozen=True)
+class DecisionRecord:
+    decision: Decision
+    created_at: datetime
+    saved_at: datetime | None
 
 
 def _snapshot_from_row(row: SnapshotRow) -> ProcessSnapshot:
@@ -161,6 +168,58 @@ class DecisionRepository:
             ).limit(limit)
         )
         return tuple(_decision_from_row(row) for row in rows)
+
+    def get_record(self, decision_id: UUID) -> DecisionRecord | None:
+        row = self.session.get(DecisionRow, decision_id)
+        if row is None:
+            return None
+        return DecisionRecord(_decision_from_row(row), row.created_at, row.saved_at)
+
+    def list_records(
+        self, *, saved_only: bool = True, limit: int = 20
+    ) -> tuple[DecisionRecord, ...]:
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        query = select(DecisionRow)
+        if saved_only:
+            query = query.where(DecisionRow.saved_at.is_not(None))
+        rows = self.session.scalars(
+            query.order_by(DecisionRow.created_at.desc(), DecisionRow.id).limit(limit)
+        )
+        return tuple(
+            DecisionRecord(_decision_from_row(row), row.created_at, row.saved_at) for row in rows
+        )
+
+
+class EvaluationRepository:
+    """Persist one standalone scenario evaluation inside a caller-owned transaction."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def put(self, evaluation: ScenarioEvaluation) -> None:
+        payload = evaluation.model_dump(mode="json")
+        action = evaluation.action.model_dump(mode="json")
+        self.session.execute(
+            insert(EvaluationRow)
+            .values(
+                id=evaluation.evaluation_id,
+                snapshot_id=evaluation.snapshot_id,
+                decision_id=None,
+                action=action,
+                payload=payload,
+            )
+            .on_conflict_do_nothing(index_elements=[EvaluationRow.id])
+        )
+        row = self.session.get(EvaluationRow, evaluation.evaluation_id)
+        if (
+            row is None
+            or row.payload != payload
+            or row.snapshot_id != evaluation.snapshot_id
+            or row.decision_id is not None
+            or row.action != action
+        ):
+            raise ValueError("Evaluation ID already belongs to another immutable calculation")
 
 
 class CalculationRepository:

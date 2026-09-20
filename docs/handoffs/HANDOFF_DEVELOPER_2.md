@@ -29,23 +29,24 @@
 Срез на 2026-09-20, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
-- Реализованы загрузка/аудит, CLI prepare/train, SnapshotProvider, единый feature builder и
-  artifact-backed QualityAgent для прогноза продолжения; evaluate и serve пока только план.
+- Реализованы загрузка/аудит, CLI prepare/train/evaluate/serve, SnapshotProvider, единый
+  feature builder и artifact-backed QualityAgent для прогноза продолжения.
 - Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support.
 - Этап C разработчика 2 реализован: SeverityProxyAgent с конфигурацией факторов P8/T11/F19, прозрачной нормировкой/вкладами и provenance; current_throughput отдельно от будущей эффективности. Реальные единицы/нормировки не утверждены, поэтому численный индекс и выпуск остаются неизвестными. Будущие выпуск/затраты null/unavailable, переход не оценён. Подробнее: [SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md).
 - Есть compose.yaml (PostgreSQL 17), Alembic 0001 и ORM. Snapshot/Decision repositories
   дополнены атомарным CalculationRepository; ReplayRepository реализует
-  initialize/advance/restart с expected_snapshot_id и stale conflict. Сервис API ещё не реализован.
+  initialize/advance/restart с expected_snapshot_id и stale conflict. FastAPI использует
+  CalculationRepository для атомарной записи и repository metadata для истории.
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
 - Пункт D первого разработчика реализован: HGB честно сравнен с persistence на validation;
   выбран победивший persistence baseline, создан empirical interval и отдельная test/ЛИМС-
   оценка. Артефакты воспроизводятся `train` и не коммитятся. Последующий E подтвердил, что
   действия остаются неподдержанными по versioned blockers, а не из-за отсутствия механизма.
-  Маршрутов FastAPI/OpenAPI пока нет. Этап G второго разработчика собрал frontend
-  против согласованного HTTP-контракта; реальный backend E2E остаётся зависимостью от F первого.
-- Статус маршрута разработчика 1: A–E завершены по текущей приёмке. В E применимость действий
-  воспроизводимо проверена и заблокирована: данных недостаточно для защищаемой оценки эффекта.
-  Это штатный `unsupported` без чисел; следующий маршрут — F, CLI/FastAPI.
+  Этап F первого добавил все маршруты FastAPI, versioned OpenAPI и общий application service.
+  Этап G второго собрал frontend против того же `/api/v1`; transport shapes согласованы.
+- Статус маршрута разработчика 1: A–F реализованы. В E применимость действий воспроизводимо
+  проверена и заблокирована: данных недостаточно для защищаемой оценки эффекта. Это штатный
+  `unsupported` без чисел; API не превращает его в рекомендацию.
 - Артефакт E содержит train-only raw audit P8/T11/F19, отдельные blocker codes, невалидированное
   предположение удержания 60 минут и явные null для joint-support k/threshold,
   counterfactual uncertainty и transition response. Controls остаются `available=false`.
@@ -70,17 +71,19 @@
   Доменные типы генерируются из общей JSON Schema; HTTP adapter единый, fixture
   явно маркирован и выключен по умолчанию. Late responses защищены abort + generation key,
   редактирование ставит replay на паузу, save использует server decision_id.
-  Из-за отсутствия FastAPI/OpenAPI временные transport envelopes изолированы, реальный
-  E2E не заявлен. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
+  Transport envelopes сверены с опубликованным OpenAPI; полный browser/PostgreSQL E2E ещё
+  должен быть повторён на запущенном общем окружении. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
 - Этап H проверен в доступной интеграционной границе: prepare/train и реальная
   композиция A–E воспроизведены, PostgreSQL 17 повторно проверен, frontend получил
-  race/history и contract-drift тесты. Полный HTTP/browser E2E заблокирован отсутствующими
-  FastAPI/OpenAPI разработчика 1 и не считается выполненным. Матрица и команды:
+  race/history и contract-drift тесты. Прежний блокер FastAPI/OpenAPI снят; полный
+  HTTP/browser/PostgreSQL E2E ещё не считается выполненным. Матрица и команды:
   [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
-- Последние проверки после H: Ruff check/format --check прошли; обычный pytest —
-  174 passed, 6 skipped. Отдельно PostgreSQL 17 — 6 passed: migration/check с нуля,
+- Последние проверки до финального коммита F: Ruff check/format --check прошли; обычный pytest —
+  181 passed, 6 skipped. Отдельно PostgreSQL 17 ранее — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
-  Frontend: contract drift/typecheck прошли, 9 tests passed, production build прошёл.
+  Frontend после интеграции: contract drift/typecheck и production build прошли. Прежний
+  прогон второго разработчика дал 9 tests passed; текущий повтор на Node 20.18.1 не стартовал,
+  потому что зафиксированные Vite/jsdom-зависимости требуют Node >=20.19.0.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
@@ -591,15 +594,15 @@ advance/restart и явным stale conflict. Полный расчёт запи
 транзакцией; collision evaluation откатывает новый DecisionRow. Save принимает
 только server-side decision_id и сохраняет первый saved_at.
 
-Обычный pytest: 174 passed, 6 PostgreSQL tests skipped. Отдельный безопасный
+После интеграции API обычный pytest: 181 passed, 6 PostgreSQL tests skipped. Отдельный безопасный
 PostgreSQL 17 прогон: 6 passed; случайный Compose project, пароль, порт и volume
 удалены после проверки. Проверены migration/check с нуля, reconnect, JSONB,
 TIMESTAMPTZ, FK, immutable conflicts, atomic rollback, save/history и гонка двух
 replay Session. Пользовательская БД не использовалась. Документация и передача
 первому: [PERSISTENCE_V1.md](../PERSISTENCE_V1.md).
 
-Следующий собственный этап — G frontend после передачи актуального OpenAPI.
-Исходные критерии F ниже сохранены как выполненная приёмка.
+FastAPI первого теперь потребляет эти repositories, OpenAPI опубликован. Исходные критерии F
+ниже сохранены как выполненная приёмка; остаётся совместный HTTP/PostgreSQL E2E.
 
 Использовать PostgreSQL с фиксированным major image (postgres:17), именованным volume и healthcheck. SQLAlchemy 2 + psycopg; Alembic — единственный путь создания/изменения схемы. Не полагаться на create_all при обычном старте.
 
@@ -632,11 +635,9 @@ save/history и fail-visible состояния. Fixture статический,
 выключен по умолчанию; он не притворяется моделью действий. Typecheck, 7 unit/UI
 тестов и production build прошли. Подробности: [FRONTEND_V1.md](../FRONTEND_V1.md).
 
-Зависимость этапа не скрыта: FastAPI routes и OpenAPI первым разработчиком ещё не
-реализованы. Поэтому transport envelopes пока локализованы в API boundary, а реальный
-E2E с PostgreSQL не выполнен. После передачи OpenAPI заменить envelopes генерацией,
-проверить реальные четыре исхода/ошибки и выполнить совместный H. Исходные критерии G
-ниже сохранены как реализованная приёмка, кроме этой интеграционной зависимости.
+FastAPI routes и OpenAPI теперь реализованы первым; transport envelopes сверены с опубликованной
+схемой, реальный режим остаётся default. Полный E2E с PostgreSQL ещё не выполнен. Проверить
+реальные ответы/ошибки и выполнить совместный H. Исходные критерии G ниже сохранены.
 
 Стек React + TypeScript + Vite. Получить OpenAPI от первого разработчика; генерировать типы, не поддерживать вручную вторую несовместимую копию схемы. Использовать один API client.
 
@@ -673,10 +674,9 @@ Promise старого action завершается после перехода
 snapshot. Frontend: 9 tests, typecheck, build. Повторно прошли prepare/train,
 real smoke A–E и 6/6 на отдельном PostgreSQL 17.
 
-Полная приёмка H остаётся `integration blocked`: разработчик 1 ещё не реализовал
-FastAPI/OpenAPI, поэтому невозможно честно выполнить browser → API → PostgreSQL,
-HTTP status/error matrix и реальные response fixtures. Не заменять это fixture E2E.
-Точная матрица, команды и список передачи первому:
+Прежний блокер FastAPI/OpenAPI снят. Полная приёмка H остаётся незавершённой до фактического
+browser → API → PostgreSQL E2E и HTTP status/error matrix; fixture не заменяет этот прогон.
+Точная обновлённая матрица и команды:
 [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
 
 Unit:

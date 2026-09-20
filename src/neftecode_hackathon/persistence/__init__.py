@@ -2,7 +2,9 @@
 
 from neftecode_hackathon.persistence.repositories import (
     CalculationRepository,
+    DecisionRecord,
     DecisionRepository,
+    EvaluationRepository,
     ReplayConflictError,
     ReplayPosition,
     ReplayRepository,
@@ -11,7 +13,9 @@ from neftecode_hackathon.persistence.repositories import (
 
 __all__ = [
     "CalculationRepository",
+    "DecisionRecord",
     "DecisionRepository",
+    "EvaluationRepository",
     "ReplayConflictError",
     "ReplayPosition",
     "ReplayRepository",

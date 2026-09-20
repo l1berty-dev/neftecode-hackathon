@@ -6,7 +6,7 @@ import type {
 
 export type { Decision, ProcessSnapshot, ScenarioEvaluation };
 
-/** Transport-only fields. Replace from OpenAPI as soon as the backend publishes it. */
+/** Transport boundary kept aligned with the published examples/openapi.v1.json. */
 export interface HealthResponse {
   ready: boolean;
   model_ready: boolean;

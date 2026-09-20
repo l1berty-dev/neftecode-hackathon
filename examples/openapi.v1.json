@@ -1,0 +1,1799 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Neftecode operator adviser API",
+    "description": "Replay-only decision support for hydrotreater 24-2000. The service recommends and explains; it never controls equipment.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/controls": {
+      "get": {
+        "tags": [
+          "configuration"
+        ],
+        "summary": "Controls",
+        "operationId": "controls_api_v1_controls_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControlsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/episodes": {
+      "get": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Episodes",
+        "operationId": "episodes_api_v1_episodes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/replay/start": {
+      "post": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Replay Start",
+        "operationId": "replay_start_api_v1_replay_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/replay/advance": {
+      "post": {
+        "tags": [
+          "replay"
+        ],
+        "summary": "Replay Advance",
+        "operationId": "replay_advance_api_v1_replay_advance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayAdvanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/snapshots/current": {
+      "get": {
+        "tags": [
+          "snapshots"
+        ],
+        "summary": "Current Snapshot",
+        "operationId": "current_snapshot_api_v1_snapshots_current_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/snapshots/{snapshot_id}": {
+      "get": {
+        "tags": [
+          "snapshots"
+        ],
+        "summary": "Snapshot",
+        "operationId": "snapshot_api_v1_snapshots__snapshot_id__get",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Snapshot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/decisions": {
+      "post": {
+        "tags": [
+          "decisions"
+        ],
+        "summary": "Create Decision",
+        "operationId": "create_decision_api_v1_decisions_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "decisions"
+        ],
+        "summary": "Decisions",
+        "operationId": "decisions_api_v1_decisions_get",
+        "parameters": [
+          {
+            "name": "saved_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Saved Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/scenarios/evaluate": {
+      "post": {
+        "tags": [
+          "scenarios"
+        ],
+        "summary": "Evaluate Scenario",
+        "operationId": "evaluate_scenario_api_v1_scenarios_evaluate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScenarioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenarioResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/decisions/{decision_id}/save": {
+      "post": {
+        "tags": [
+          "decisions"
+        ],
+        "summary": "Save Decision",
+        "operationId": "save_decision_api_v1_decisions__decision_id__save_post",
+        "parameters": [
+          {
+            "name": "decision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Decision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/decisions/{decision_id}": {
+      "get": {
+        "tags": [
+          "decisions"
+        ],
+        "summary": "Decision",
+        "operationId": "decision_api_v1_decisions__decision_id__get",
+        "parameters": [
+          {
+            "name": "decision_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Decision Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoredDecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Action": {
+        "properties": {
+          "action_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Action Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Label"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ActionOrigin"
+          },
+          "changes": {
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]*:[^\\s]+$": {
+                "type": "number"
+              }
+            },
+            "type": "object",
+            "title": "Changes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action_id",
+          "label",
+          "origin"
+        ],
+        "title": "Action",
+        "description": "Alternative next action; changes are absolute current setpoints."
+      },
+      "ActionInput": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Label",
+            "default": "Вариант оператора"
+          },
+          "changes": {
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]*:[^\\s]+$": {
+                "type": "number"
+              }
+            },
+            "type": "object",
+            "title": "Changes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ActionInput"
+      },
+      "ActionOrigin": {
+        "type": "string",
+        "enum": [
+          "baseline",
+          "system",
+          "operator"
+        ],
+        "title": "ActionOrigin"
+      },
+      "Admissibility": {
+        "type": "string",
+        "enum": [
+          "admissible",
+          "rejected",
+          "not_assessable"
+        ],
+        "title": "Admissibility"
+      },
+      "Applicability": {
+        "type": "string",
+        "enum": [
+          "supported",
+          "unsupported",
+          "insufficient_data"
+        ],
+        "title": "Applicability"
+      },
+      "CheckCategory": {
+        "type": "string",
+        "enum": [
+          "data",
+          "quality",
+          "reliability",
+          "control",
+          "applicability"
+        ],
+        "title": "CheckCategory"
+      },
+      "CheckResult": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Code"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CheckCategory"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Message"
+          },
+          "actual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actual"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "passed",
+          "category",
+          "message"
+        ],
+        "title": "CheckResult"
+      },
+      "ControlResponse": {
+        "properties": {
+          "signal_id": {
+            "type": "string",
+            "title": "Signal Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "signal_id",
+          "label",
+          "available",
+          "reason",
+          "unit",
+          "min",
+          "max",
+          "step",
+          "source"
+        ],
+        "title": "ControlResponse"
+      },
+      "ControlsResponse": {
+        "properties": {
+          "constraint_version": {
+            "type": "string",
+            "title": "Constraint Version"
+          },
+          "controls": {
+            "items": {
+              "$ref": "#/components/schemas/ControlResponse"
+            },
+            "type": "array",
+            "title": "Controls"
+          },
+          "review_issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Review Issues"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "constraint_version",
+          "controls",
+          "review_issues"
+        ],
+        "title": "ControlsResponse"
+      },
+      "Decision": {
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "horizon_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Horizon Minutes"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DecisionStatus"
+          },
+          "baseline": {
+            "$ref": "#/components/schemas/ScenarioEvaluation"
+          },
+          "preferred": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScenarioEvaluation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "alternatives": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEvaluation"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Alternatives"
+          },
+          "rejected_evaluations": {
+            "items": {
+              "$ref": "#/components/schemas/ScenarioEvaluation"
+            },
+            "type": "array",
+            "title": "Rejected Evaluations"
+          },
+          "explanation": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Explanation"
+          },
+          "trace": {
+            "items": {
+              "$ref": "#/components/schemas/TraceEntry"
+            },
+            "type": "array",
+            "title": "Trace"
+          },
+          "dataset_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Dataset Version"
+          },
+          "model_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model Version"
+          },
+          "constraint_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Constraint Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision_id",
+          "snapshot_id",
+          "horizon_minutes",
+          "status",
+          "baseline",
+          "preferred",
+          "alternatives",
+          "rejected_evaluations",
+          "explanation",
+          "trace",
+          "dataset_version",
+          "model_version",
+          "constraint_version"
+        ],
+        "title": "Decision"
+      },
+      "DecisionListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DecisionSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "DecisionListResponse"
+      },
+      "DecisionRequest": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "horizon_minutes": {
+            "type": "integer",
+            "const": 60,
+            "title": "Horizon Minutes",
+            "default": 60
+          },
+          "operator_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id"
+        ],
+        "title": "DecisionRequest"
+      },
+      "DecisionResponse": {
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "current_snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Current Snapshot Id"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision",
+          "current_snapshot_id",
+          "stale"
+        ],
+        "title": "DecisionResponse"
+      },
+      "DecisionStatus": {
+        "type": "string",
+        "enum": [
+          "change_recommended",
+          "no_change",
+          "insufficient_data",
+          "no_feasible_option"
+        ],
+        "title": "DecisionStatus"
+      },
+      "DecisionSummary": {
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DecisionStatus"
+          },
+          "saved": {
+            "type": "boolean",
+            "title": "Saved"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision_id",
+          "snapshot_id",
+          "created_at",
+          "status",
+          "saved"
+        ],
+        "title": "DecisionSummary"
+      },
+      "EpisodeResponse": {
+        "properties": {
+          "episode_id": {
+            "type": "string",
+            "title": "Episode Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End"
+          },
+          "step_minutes": {
+            "type": "integer",
+            "title": "Step Minutes"
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "episode_id",
+          "name",
+          "start",
+          "end",
+          "step_minutes",
+          "synthetic",
+          "limitations"
+        ],
+        "title": "EpisodeResponse"
+      },
+      "EpisodesResponse": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/EpisodeResponse"
+            },
+            "type": "array",
+            "title": "Episodes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version",
+          "episodes"
+        ],
+        "title": "EpisodesResponse"
+      },
+      "EstimateBasis": {
+        "type": "string",
+        "enum": [
+          "measured",
+          "predicted",
+          "proxy",
+          "unavailable"
+        ],
+        "title": "EstimateBasis"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "model_ready": {
+            "type": "boolean",
+            "title": "Model Ready"
+          },
+          "data_ready": {
+            "type": "boolean",
+            "title": "Data Ready"
+          },
+          "database_ready": {
+            "type": "boolean",
+            "title": "Database Ready"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ready",
+          "model_ready",
+          "data_ready",
+          "database_ready"
+        ],
+        "title": "HealthResponse"
+      },
+      "HistoryRecord": {
+        "properties": {
+          "signal_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*:[^\\s]+$",
+            "title": "Signal Id"
+          },
+          "measured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Measured At"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "signal_id",
+          "measured_at",
+          "value"
+        ],
+        "title": "HistoryRecord",
+        "description": "A historical observation included in a snapshot history window."
+      },
+      "Measurement": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Source"
+          },
+          "measured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Measured At"
+          },
+          "available_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Available At"
+          },
+          "age_seconds": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Age Seconds"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/MeasurementQuality"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "unit",
+          "source",
+          "measured_at",
+          "available_at",
+          "age_seconds",
+          "quality"
+        ],
+        "title": "Measurement",
+        "description": "One value together with its event time, availability, and quality."
+      },
+      "MeasurementQuality": {
+        "type": "string",
+        "enum": [
+          "valid",
+          "suspect",
+          "missing"
+        ],
+        "title": "MeasurementQuality"
+      },
+      "MetricEstimate": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/EstimateBasis"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Explanation"
+          },
+          "lower": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lower"
+          },
+          "upper": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "unit",
+          "basis",
+          "explanation"
+        ],
+        "title": "MetricEstimate"
+      },
+      "ProcessSnapshot": {
+        "properties": {
+          "contract_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Contract Version",
+            "default": 1
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SnapshotMode"
+          },
+          "dataset_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Dataset Version"
+          },
+          "values": {
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]*:[^\\s]+$": {
+                "$ref": "#/components/schemas/Measurement"
+              }
+            },
+            "type": "object",
+            "title": "Values"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryRecord"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          },
+          "completeness": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Completeness"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "as_of",
+          "mode",
+          "dataset_version",
+          "values",
+          "history",
+          "completeness"
+        ],
+        "title": "ProcessSnapshot"
+      },
+      "QualityAssessment": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Target"
+          },
+          "forecast_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Forecast At"
+          },
+          "prediction": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prediction"
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Unit"
+          },
+          "lower": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lower"
+          },
+          "upper": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper"
+          },
+          "interval_coverage_target": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Coverage Target"
+          },
+          "applicability": {
+            "$ref": "#/components/schemas/Applicability"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "model_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target",
+          "forecast_at",
+          "prediction",
+          "unit",
+          "lower",
+          "upper",
+          "interval_coverage_target",
+          "applicability",
+          "reasons",
+          "model_version"
+        ],
+        "title": "QualityAssessment"
+      },
+      "ReliabilityAssessment": {
+        "properties": {
+          "severity_index": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Index"
+          },
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/ReliabilityFactor"
+            },
+            "type": "array",
+            "title": "Factors"
+          },
+          "transition_assessed": {
+            "type": "boolean",
+            "title": "Transition Assessed"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "severity_index",
+          "factors",
+          "transition_assessed",
+          "limitations"
+        ],
+        "title": "ReliabilityAssessment"
+      },
+      "ReliabilityFactor": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution"
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Explanation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "contribution",
+          "explanation"
+        ],
+        "title": "ReliabilityFactor"
+      },
+      "ReplayAdvanceRequest": {
+        "properties": {
+          "expected_snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Expected Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_snapshot_id"
+        ],
+        "title": "ReplayAdvanceRequest"
+      },
+      "ReplayStartRequest": {
+        "properties": {
+          "episode_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ReplayStartRequest"
+      },
+      "SaveDecisionResponse": {
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Decision Id"
+          },
+          "saved": {
+            "type": "boolean",
+            "const": true,
+            "title": "Saved",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision_id"
+        ],
+        "title": "SaveDecisionResponse"
+      },
+      "ScenarioEvaluation": {
+        "properties": {
+          "evaluation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evaluation Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "horizon_minutes": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Horizon Minutes"
+          },
+          "action": {
+            "$ref": "#/components/schemas/Action"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/QualityAssessment"
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/ReliabilityAssessment"
+          },
+          "throughput": {
+            "$ref": "#/components/schemas/MetricEstimate"
+          },
+          "cost": {
+            "$ref": "#/components/schemas/MetricEstimate"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/CheckResult"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "admissibility": {
+            "$ref": "#/components/schemas/Admissibility"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "model_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model Version"
+          },
+          "constraint_version": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Constraint Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "evaluation_id",
+          "snapshot_id",
+          "horizon_minutes",
+          "action",
+          "quality",
+          "reliability",
+          "throughput",
+          "cost",
+          "checks",
+          "admissibility",
+          "reasons",
+          "model_version",
+          "constraint_version"
+        ],
+        "title": "ScenarioEvaluation"
+      },
+      "ScenarioRequest": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id"
+          },
+          "horizon_minutes": {
+            "type": "integer",
+            "const": 60,
+            "title": "Horizon Minutes",
+            "default": 60
+          },
+          "changes": {
+            "patternProperties": {
+              "^[a-z][a-z0-9_-]*:[^\\s]+$": {
+                "type": "number"
+              }
+            },
+            "type": "object",
+            "title": "Changes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "changes"
+        ],
+        "title": "ScenarioRequest"
+      },
+      "ScenarioResponse": {
+        "properties": {
+          "evaluation": {
+            "$ref": "#/components/schemas/ScenarioEvaluation"
+          },
+          "current_snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Current Snapshot Id"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "evaluation",
+          "current_snapshot_id",
+          "stale"
+        ],
+        "title": "ScenarioResponse"
+      },
+      "SnapshotMode": {
+        "type": "string",
+        "enum": [
+          "replay",
+          "manual"
+        ],
+        "title": "SnapshotMode"
+      },
+      "SnapshotResponse": {
+        "properties": {
+          "snapshot": {
+            "$ref": "#/components/schemas/ProcessSnapshot"
+          },
+          "current_snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Current Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot",
+          "current_snapshot_id"
+        ],
+        "title": "SnapshotResponse"
+      },
+      "StoredDecisionResponse": {
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "current_snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Current Snapshot Id"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision",
+          "current_snapshot_id",
+          "stale"
+        ],
+        "title": "StoredDecisionResponse"
+      },
+      "TraceEntry": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Role"
+          },
+          "input_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Input Ids"
+          },
+          "output_summary": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Output Summary"
+          },
+          "check_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Check Codes",
+            "default": []
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role",
+          "input_ids",
+          "output_summary"
+        ],
+        "title": "TraceEntry"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

@@ -11,6 +11,8 @@ forecast, manifest и artifact-backed QualityAgent. Пометки ниже о �
 [ACTION_ASSESSMENT_V1.md](../ACTION_ASSESSMENT_V1.md).
 Этап F разработчика 2 затем завершил атомарное сохранение и replay repository;
 актуальная передача: [PERSISTENCE_V1.md](../PERSISTENCE_V1.md).
+Этап F разработчика 1 подключил их к CLI/FastAPI и опубликовал OpenAPI;
+актуальная передача: [API_V1.md](../API_V1.md).
 
 Область этого этапа — раздел A `HANDOFF_DEVELOPER_2.md`, не Definition of done
 всего продукта. Это протокол подготовительного запуска. Оба основных handoff

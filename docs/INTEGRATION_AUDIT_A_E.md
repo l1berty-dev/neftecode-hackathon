@@ -54,21 +54,20 @@
 | Работа | Владелец/этап | Текущее состояние |
 | --- | --- | --- |
 | Replay repository и transactional advance | разработчик 2, F | Выполнено после аудита A–E; expected_snapshot_id и гонка двух Session проверены |
-| Полная persistence-транзакция решения и evaluations | разработчик 2, F | Выполнено после аудита A–E; atomic rollback/save/history проверены, API-flow ещё не подключён |
-| `evaluate` и `serve`, FastAPI/OpenAPI | разработчик 1, F | Не реализовано; `prepare` и `train` готовы |
-| PostgreSQL E2E после API | совместно F/H | Предыдущая отдельная БД проверена; новый API E2E ещё впереди |
-| React и защита от stale responses | разработчик 2, G | Не реализовано |
+| Полная persistence-транзакция решения и evaluations | разработчик 2, F | Выполнено и подключено API через CalculationRepository; standalone evaluation сохраняется отдельно |
+| `evaluate` и `serve`, FastAPI/OpenAPI | разработчик 1, F | Выполнено; 11 routes, статический OpenAPI и HTTP-тесты |
+| PostgreSQL E2E после API | совместно F/H | PostgreSQL отдельно проверен 6/6; полный HTTP/browser путь ещё впереди |
+| React и защита от stale responses | разработчик 2, G | Выполнено; 9 тестов, typecheck/build, transport сверены с OpenAPI |
 | Демо полезного изменения | совместно | Заблокировано отсутствием защищаемого action effect; не заменяется synthetic результатом |
 
-Developer 2 F persistence/replay завершён. Следующий корректный порядок: developer 1 F
-CLI/FastAPI подключает repositories, затем интеграционный PostgreSQL E2E,
-OpenAPI → frontend G и финальные проверки.
+Оба F и frontend G реализованы. Следующий корректный шаг — совместный browser → API →
+PostgreSQL E2E; отсутствие action-support остаётся честным продуктовым ограничением.
 
 ## Проверки аудита
 
 - `uv run ruff check .`
 - `uv run ruff format --check .`
-- После F `uv run pytest`: 174 passed, 6 skipped; пропущены только opt-in PostgreSQL tests.
+- После объединения F `uv run pytest`: 181 passed, 6 skipped; пропущены только opt-in PostgreSQL tests.
 - После F отдельный PostgreSQL 17: 6 passed; временный Compose project/volume удалён.
 - Два последовательных запуска `train` дали одинаковую model version и одинаковые метрики.
 - `git diff --check` прошёл; производные data/artifacts остаются Git-ignored.

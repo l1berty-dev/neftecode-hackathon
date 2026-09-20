@@ -29,6 +29,7 @@ neftecode-hackathon = "neftecode_hackathon:main"
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.13.0",
     "pre-commit>=4.0.0",
     "pytest>=8.4.2",
     "ruff>=0.13.0",
