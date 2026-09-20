@@ -173,8 +173,10 @@ train-only/model bounds и поддержки действия агентом к
    sourced tolerances и четыре исхода —
    [CANDIDATE_SELECTION_V1.md](CANDIDATE_SELECTION_V1.md). Собственный E выполнен:
    полное объяснение и trace отбора — [COORDINATOR_V1.md](COORDINATOR_V1.md).
-   Далее F/replay persistence. Реальные действия ещё не открыты.
-5. Интеграция: реальный snapshot → реальные оценки/отказ → operator action →
-   транзакция PostgreSQL → чтение. Далее replay repository, FastAPI/OpenAPI и React.
+   F/replay persistence выполнен: [PERSISTENCE_V1.md](PERSISTENCE_V1.md).
+   Далее API первого и frontend G второго. Реальные действия ещё не открыты.
+5. Интеграция: repositories/replay готовы и проверены отдельно. Далее FastAPI/OpenAPI
+   соединяет snapshot → оценки/отказ → operator action → транзакцию → историю;
+   затем React. Реальный совместный E2E ещё не заявлен.
 
 Изменение документации не означает, что перечисленные изменения кода выполнены.

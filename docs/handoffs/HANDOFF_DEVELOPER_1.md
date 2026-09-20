@@ -26,14 +26,16 @@
 
 ### Реальное состояние репозитория
 
-Срез на 2026-09-16, проверенный по коду и последним фактическим проверкам:
+Срез на 2026-09-20, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train, SnapshotProvider, единый feature builder и
   artifact-backed QualityAgent для прогноза продолжения; evaluate и serve пока только план.
 - Этап B реализован: evaluator с DI загружает валидируемую policy, проверяет управления, baseline, диапазоны/шаги/сочетания, свежесть, provenance, применимость, интервал серы и required checks. Тестовый QualityAgent только в tests. Реальные изменения пока запрещены из-за недостающих единиц/диапазонов/support.
 - Этап C разработчика 2 реализован: SeverityProxyAgent с конфигурацией факторов P8/T11/F19, прозрачной нормировкой/вкладами и provenance; current_throughput отдельно от будущей эффективности. Реальные единицы/нормировки не утверждены, поэтому численный индекс и выпуск остаются неизвестными. Будущие выпуск/затраты null/unavailable, переход не оценён. Подробнее: [SEVERITY_EFFICIENCY_V1.md](../SEVERITY_EFFICIENCY_V1.md).
-- Есть compose.yaml (PostgreSQL 17), Alembic 0001, ORM, SnapshotRepository и DecisionRepository. Миграция, FK, rollback, идемпотентность save, JSON/TIMESTAMPTZ и reconnect проверены на отдельном временном PostgreSQL. Replay repository/advance и сервис API ещё не реализованы.
+- Есть compose.yaml (PostgreSQL 17), Alembic 0001 и ORM. Snapshot/Decision repositories
+  дополнены атомарным CalculationRepository; ReplayRepository реализует
+  initialize/advance/restart с expected_snapshot_id и stale conflict. Сервис API ещё не реализован.
 - config/controls.yaml содержит подтверждённые P8/T11/F19 с evidence; все available=false до получения численных единиц/шкал, train-диапазонов, шага и поддержки активной модели. config/constraints.yaml загружается evaluator, версии двух файлов сверяются. Ramp limits не выдуманы; необязательный переход/unknown cost не подменяются обязательными проверками.
 - Пункт D первого разработчика реализован: HGB честно сравнен с persistence на validation;
   выбран победивший persistence baseline, создан empirical interval и отдельная test/ЛИМС-
@@ -59,11 +61,15 @@
   Trace связывает validation, baseline, generation, остальные evaluations и selection.
   Это не модель эффекта E первого; реальные controls остаются закрытыми.
   Передача API и воспроизводимый synthetic пример: [COORDINATOR_V1.md](../COORDINATOR_V1.md).
-- Последние проверки после E разработчика 1: Ruff check/format --check прошли; pytest —
-  174 passed, 2 skipped (PostgreSQL opt-in). PostgreSQL ранее проверен отдельно: 2 passed;
-  БД/миграции в E не менялись и повторно не запускались. Локальные Git-ignored `data/processed/`
-  и `artifacts/` воспроизведены; реальный smoke Snapshot → QualityAgent → Evaluator →
-  Coordinator выполнен на `2026-08-06T21:00:00Z`.
+- Этап F разработчика 2 реализован без изменения схемы: атомарная запись полного
+  расчёта/rollback, immutable cross-check колонок и JSONB, идемпотентный save,
+  history list и конкурентный replay. Передача API: [PERSISTENCE_V1.md](../PERSISTENCE_V1.md).
+- Последние проверки после F: Ruff check/format --check прошли; обычный pytest —
+  174 passed, 6 skipped. Отдельно PostgreSQL 17 — 6 passed: migration/check с нуля,
+  JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
+  Временный Compose project/volume удалён. База пользователя не использовалась.
+  Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
+  сейчас Git-ignored `data/processed/` и `artifacts/` в checkout отсутствуют.
 - CSV развёрнуты через локально настроенный Git LFS; context/ содержательно не изменён. tmp/ — промежуточные материалы, не источник требований.
 - Подробнее: [PREPARATION_DEVELOPER_2.md](PREPARATION_DEVELOPER_2.md), [SCENARIO_POLICY_V1.md](../SCENARIO_POLICY_V1.md), [FORECAST_MODEL_V1.md](../FORECAST_MODEL_V1.md), [INTEGRATION_AUDIT_A_E.md](../INTEGRATION_AUDIT_A_E.md). Ответы организаторов и provenance внедрённых исправлений подготовки: [ORGANIZER_CLARIFICATIONS.md](../ORGANIZER_CLARIFICATIONS.md).
 
@@ -615,6 +621,12 @@ evaluator не может его обойти. Для численной акт�
 на train/validation. Эти входы не считаются задачей F и не подменяются API-логикой.
 
 ### F. Собрать CLI и FastAPI
+
+**Зависимость persistence от разработчика 2 готова.** Используй
+`CalculationRepository.record/save` для полного server-side Decision и
+`ReplayRepository` для expected_snapshot_id; не копируй транзакционную логику
+в routes. Интерфейсы, ошибки конкурентности и проверенные команды:
+[PERSISTENCE_V1.md](../PERSISTENCE_V1.md). Схема остаётся Alembic 0001.
 
 Предусмотреть команды (конкретные имена фиксируются здесь):
 - `uv run neftecode-hackathon prepare`
