@@ -67,10 +67,14 @@ Frontend проверяется отдельно:
 ```bash
 cd frontend
 npm ci
+npm run check:contracts
 npm run typecheck
 npm test
 npm run build
 ```
+
+`npm run generate:contracts` обновляет доменные типы из JSON Schema и transport-типы
+из checked-in OpenAPI. Сгенерированные файлы нельзя править вручную.
 
 Реальный API-режим включён по умолчанию и ожидает `/api/v1`. Явно включаемый
 synthetic preview через `VITE_USE_FIXTURE=true` помечен в интерфейсе и не имитирует

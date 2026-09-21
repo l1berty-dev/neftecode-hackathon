@@ -1,6 +1,6 @@
 import fixture from "../../../examples/contract_v1.synthetic.json";
 import type { ContractExample } from "./contracts.generated";
-import type { Api, DecideRequest, DecisionSummary } from "./types";
+import type { Api, DecideRequest, DecisionSummary, ScenarioRequest } from "./types";
 import { ApiError } from "./types";
 
 const sample = fixture as unknown as ContractExample;
@@ -10,7 +10,13 @@ export class FixtureApi implements Api {
   private saved = false;
 
   async health() {
-    return { ready: true, model_ready: true, data_ready: true, database_ready: true };
+    return {
+      ready: true,
+      model_ready: true,
+      data_ready: true,
+      database_ready: true,
+      issues: [],
+    };
   }
 
   async controls() {
@@ -27,6 +33,24 @@ export class FixtureApi implements Api {
           max: null,
           step: null,
           source: "synthetic fixture",
+        },
+      ],
+      review_issues: ["Статический fixture не подтверждает реальные управления"],
+    };
+  }
+
+  async episodes() {
+    return {
+      version: "synthetic-fixture-v1",
+      episodes: [
+        {
+          episode_id: "synthetic-fixture",
+          name: "Статический synthetic fixture",
+          start: sample.snapshot.as_of,
+          end: sample.snapshot.as_of,
+          step_minutes: 10,
+          synthetic: true,
+          limitations: ["Нет следующего replay-шага и расчёта новых действий."],
         },
       ],
     };
@@ -66,6 +90,14 @@ export class FixtureApi implements Api {
     };
   }
 
+  async evaluate(_request: ScenarioRequest): Promise<never> {
+    throw new ApiError(
+      "Статический fixture не рассчитывает пользовательские действия",
+      422,
+      "FIXTURE_STATIC",
+    );
+  }
+
   async savedDecisions() {
     const items: DecisionSummary[] = this.saved
       ? [
@@ -97,6 +129,6 @@ export class FixtureApi implements Api {
       throw new ApiError("Решение отсутствует в статическом fixture", 404, "FIXTURE_NOT_FOUND");
     }
     this.saved = true;
-    return { decision_id: id, saved: true };
+    return { decision_id: id, saved: true as const };
   }
 }

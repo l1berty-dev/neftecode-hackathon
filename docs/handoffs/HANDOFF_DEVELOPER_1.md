@@ -26,7 +26,7 @@
 
 ### Реальное состояние репозитория
 
-Срез на 2026-09-20, проверенный по коду и последним фактическим проверкам:
+Срез на 2026-09-21, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train/evaluate/serve, SnapshotProvider, единый
@@ -68,22 +68,22 @@
   history list и конкурентный replay. Передача API: [PERSISTENCE_V1.md](../PERSISTENCE_V1.md).
 - Этап G разработчика 2 реализован: React/TypeScript/Vite экран replay, Decision,
   отдельной прогнозной точки, сравнения, каталога управлений, details и истории.
-  Доменные типы генерируются из общей JSON Schema; HTTP adapter единый, fixture
+  Доменные типы генерируются из общей JSON Schema, transport-типы — из OpenAPI;
+  HTTP adapter единый, fixture
   явно маркирован и выключен по умолчанию. Late responses защищены abort + generation key,
-  редактирование ставит replay на паузу, save использует server decision_id.
-  Transport envelopes сверены с опубликованным OpenAPI; полный browser/PostgreSQL E2E ещё
-  должен быть повторён на запущенном общем окружении. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
-- Этап H проверен в доступной интеграционной границе: prepare/train и реальная
-  композиция A–E воспроизведены, PostgreSQL 17 повторно проверен, frontend получил
-  race/history и contract-drift тесты. Прежний блокер FastAPI/OpenAPI снят; полный
-  HTTP/browser/PostgreSQL E2E ещё не считается выполненным. Матрица и команды:
+  редактирование ставит replay на паузу, отдельная оценка идёт через
+  `/scenarios/evaluate`, save использует server decision_id. Подробнее:
+  [FRONTEND_V1.md](../FRONTEND_V1.md).
+- Этап H завершён для v1: prepare/train и реальная композиция A–E воспроизведены,
+  PostgreSQL 17 повторно проверен, frontend получил race/history, fresh replay,
+  standalone evaluation и двойную contract-drift проверку. Общий путь browser →
+  FastAPI → PostgreSQL прошёл на свежей временной БД без fixture. Матрица и команды:
   [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
-- Последние проверки до финального коммита F: Ruff check/format --check прошли; обычный pytest —
+- Последние полные проверки: Ruff check/format --check прошли; обычный pytest —
   181 passed, 6 skipped. Отдельно PostgreSQL 17 ранее — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
-  Frontend после интеграции: contract drift/typecheck и production build прошли. Прежний
-  прогон второго разработчика дал 9 tests passed; текущий повтор на Node 20.18.1 не стартовал,
-  потому что зафиксированные Vite/jsdom-зависимости требуют Node >=20.19.0.
+  Frontend после интеграции: 13 tests, JSON Schema/OpenAPI drift, typecheck и production
+  build прошли на Node 26.0.0; production dependency audit — 0 vulnerabilities.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
@@ -688,16 +688,16 @@ CLI использует те же сервисы и оценку, что API; �
 - Документация запуска и ограничений: [API_V1.md](../API_V1.md). Реальный CLI smoke на
   `2026-08-06T21:00:00Z` вернул ожидаемый fail-closed `no_feasible_option`.
 - Обычный Python suite после объединения: 181 passed, 6 PostgreSQL opt-in skipped; frontend
-  contract check/typecheck и build прошли. Прежние 9 frontend tests второго разработчика
-  прошли, но текущий повтор требует обновить Node 20.18.1 до >=20.19.0. PostgreSQL 17 suite второго ранее дал 6/6;
-  полный browser → API → PostgreSQL E2E остаётся следующей совместной проверкой.
+  JSON Schema/OpenAPI contract check, 13 tests, typecheck и build прошли на Node 26.0.0.
+  PostgreSQL 17 suite второго дал 6/6; полный browser → API → PostgreSQL E2E выполнен
+  на свежей временной БД без fixture.
 
 ### G. Завершить проверку и документацию
 
-**Статус H на 2026-09-20:** блокер FastAPI/OpenAPI снят, transport boundary frontend
-согласован. Python и frontend suites проходят; PostgreSQL отдельно ранее проверен 6/6.
-Остаётся один совместный запуск browser → API → PostgreSQL по обновлённому списку в
-[FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md); fixture не заменяет эту проверку.
+**Статус H на 2026-09-21:** блокер FastAPI/OpenAPI снят, transport boundary frontend
+генерируется из OpenAPI. Python и frontend suites проходят; PostgreSQL отдельно проверен
+6/6. Полный browser → API → PostgreSQL E2E прошёл на свежей временной БД без fixture,
+см. [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
 
 Твои тесты:
 - обе Excel-структуры разбираются независимо по времени;

@@ -174,9 +174,9 @@ train-only/model bounds и поддержки действия агентом к
    [CANDIDATE_SELECTION_V1.md](CANDIDATE_SELECTION_V1.md). Собственный E выполнен:
    полное объяснение и trace отбора — [COORDINATOR_V1.md](COORDINATOR_V1.md).
    F/replay persistence выполнен: [PERSISTENCE_V1.md](PERSISTENCE_V1.md).
-   Далее API первого и frontend G второго. Реальные действия ещё не открыты.
-5. Интеграция: repositories/replay готовы и проверены отдельно. Далее FastAPI/OpenAPI
-   соединяет snapshot → оценки/отказ → operator action → транзакцию → историю;
-   затем React. Реальный совместный E2E ещё не заявлен.
+   API первого и frontend G второго завершены. Реальные действия ещё не открыты.
+5. Интеграция: repositories/replay, FastAPI/OpenAPI и React соединены; общий путь
+   snapshot → оценки/отказ → operator action → транзакцию → историю проверен через
+   HTTP и настоящий браузер на свежей PostgreSQL 17 без fixture.
 
 Изменение документации не означает, что перечисленные изменения кода выполнены.

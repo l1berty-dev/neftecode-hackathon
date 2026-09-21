@@ -3,81 +3,52 @@ import type {
   ProcessSnapshot,
   ScenarioEvaluation,
 } from "./contracts.generated";
+import type { components } from "./openapi.generated";
 
 export type { Decision, ProcessSnapshot, ScenarioEvaluation };
 
-/** Transport boundary kept aligned with the published examples/openapi.v1.json. */
-export interface HealthResponse {
-  ready: boolean;
-  model_ready: boolean;
-  data_ready: boolean;
-  database_ready: boolean;
-}
+type Transport = components["schemas"];
 
-export interface ControlDescriptor {
-  signal_id: string;
-  label: string;
-  available: boolean;
-  reason: string | null;
-  unit: string | null;
-  min: number | null;
-  max: number | null;
-  step: number | null;
-  source: string;
-}
-
-export interface ControlsResponse {
-  constraint_version: string;
-  controls: ControlDescriptor[];
-}
-
-export interface SnapshotResponse {
+/** Transport shapes are generated from examples/openapi.v1.json. */
+export type HealthResponse = Transport["HealthResponse"];
+export type ControlDescriptor = Transport["ControlResponse"];
+export type ControlsResponse = Transport["ControlsResponse"];
+export type EpisodesResponse = Transport["EpisodesResponse"];
+export type Episode = Transport["EpisodeResponse"];
+export type SnapshotResponse = Omit<Transport["SnapshotResponse"], "snapshot"> & {
   snapshot: ProcessSnapshot;
-  current_snapshot_id: string;
-}
-
-export interface DecisionResponse {
+};
+export type DecisionResponse = Omit<Transport["DecisionResponse"], "decision"> & {
   decision: Decision;
-  current_snapshot_id: string;
-  stale: boolean;
-}
-
-export interface DecisionSummary {
-  decision_id: string;
-  snapshot_id: string;
-  created_at: string;
+};
+export type StoredDecisionResponse = Omit<Transport["StoredDecisionResponse"], "decision"> & {
+  decision: Decision;
+};
+export type DecisionSummary = Omit<Transport["DecisionSummary"], "status"> & {
   status: Decision["status"];
-  saved: boolean;
-}
-
-export interface DecisionHistoryResponse {
+};
+export type DecisionHistoryResponse = Omit<Transport["DecisionListResponse"], "items"> & {
   items: DecisionSummary[];
-}
-
-export interface SaveDecisionResponse {
-  decision_id: string;
-  saved: boolean;
-}
-
-export interface DecideRequest {
-  snapshot_id: string;
-  horizon_minutes: number;
-  operator_action: null | {
-    label: string;
-    changes: Record<string, number>;
-  };
-}
+};
+export type SaveDecisionResponse = Transport["SaveDecisionResponse"];
+export type DecideRequest = Transport["DecisionRequest"];
+export type ScenarioRequest = Transport["ScenarioRequest"];
+export type ScenarioResponse = Omit<Transport["ScenarioResponse"], "evaluation"> & {
+  evaluation: ScenarioEvaluation;
+};
 
 export interface Api {
   health(signal?: AbortSignal): Promise<HealthResponse>;
   controls(signal?: AbortSignal): Promise<ControlsResponse>;
+  episodes(signal?: AbortSignal): Promise<EpisodesResponse>;
   currentSnapshot(signal?: AbortSignal): Promise<SnapshotResponse>;
   snapshot(id: string, signal?: AbortSignal): Promise<SnapshotResponse>;
   startReplay(episodeId: string | null, signal?: AbortSignal): Promise<SnapshotResponse>;
   advanceReplay(expectedSnapshotId: string, signal?: AbortSignal): Promise<SnapshotResponse>;
   decide(request: DecideRequest, signal?: AbortSignal): Promise<DecisionResponse>;
+  evaluate(request: ScenarioRequest, signal?: AbortSignal): Promise<ScenarioResponse>;
   savedDecisions(signal?: AbortSignal): Promise<DecisionHistoryResponse>;
-  decision(id: string, signal?: AbortSignal): Promise<DecisionResponse>;
+  decision(id: string, signal?: AbortSignal): Promise<StoredDecisionResponse>;
   saveDecision(id: string, signal?: AbortSignal): Promise<SaveDecisionResponse>;
 }
 

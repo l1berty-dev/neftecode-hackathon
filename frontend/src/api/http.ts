@@ -4,9 +4,13 @@ import type {
   DecideRequest,
   DecisionHistoryResponse,
   DecisionResponse,
+  EpisodesResponse,
   HealthResponse,
   SaveDecisionResponse,
+  ScenarioRequest,
+  ScenarioResponse,
   SnapshotResponse,
+  StoredDecisionResponse,
 } from "./types";
 import { ApiError } from "./types";
 
@@ -54,6 +58,10 @@ export class HttpApi implements Api {
     return this.request<ControlsResponse>("/controls", {}, signal);
   }
 
+  episodes(signal?: AbortSignal) {
+    return this.request<EpisodesResponse>("/episodes", {}, signal);
+  }
+
   currentSnapshot(signal?: AbortSignal) {
     return this.request<SnapshotResponse>("/snapshots/current", {}, signal);
   }
@@ -86,12 +94,24 @@ export class HttpApi implements Api {
     );
   }
 
+  evaluate(request: ScenarioRequest, signal?: AbortSignal) {
+    return this.request<ScenarioResponse>(
+      "/scenarios/evaluate",
+      { method: "POST", body: JSON.stringify(request) },
+      signal,
+    );
+  }
+
   savedDecisions(signal?: AbortSignal) {
     return this.request<DecisionHistoryResponse>("/decisions?saved_only=true&limit=20", {}, signal);
   }
 
   decision(id: string, signal?: AbortSignal) {
-    return this.request<DecisionResponse>(`/decisions/${encodeURIComponent(id)}`, {}, signal);
+    return this.request<StoredDecisionResponse>(
+      `/decisions/${encodeURIComponent(id)}`,
+      {},
+      signal,
+    );
   }
 
   saveDecision(id: string, signal?: AbortSignal) {

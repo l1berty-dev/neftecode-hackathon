@@ -101,6 +101,11 @@ h1, h2, h3, p { margin-top: 0; }
 .control-row input { width: 110px; border: 1px solid var(--line); border-radius: 9px; background: white; padding: 9px; }
 .text-button { color: var(--green); background: transparent; border: 0; font-size: 11px; font-weight: 700; }
 .floating-compare { position: sticky; bottom: 16px; z-index: 3; max-width: 550px; margin: 14px auto 18px; background: #10241d; color: white; border-radius: 14px; padding: 12px 12px 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 14px; box-shadow: 0 16px 50px rgb(0 0 0 / 25%); font-size: 11px; }
+.floating-compare .secondary-button { background: transparent; border: 1px solid rgb(255 255 255 / 45%); }
+.control-review { margin: -8px 0 18px; padding: 12px 17px; border: 1px solid #e5c383; border-radius: 12px; background: #f7e8cb; color: #6d4718; font-size: 10px; }
+.control-review ul { margin: 6px 0 0; padding-left: 18px; }
+.standalone-panel { margin-bottom: 18px; }
+.standalone-panel .evaluation-card { width: min(100%, 390px); }
 
 .detail-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 .detail-columns h3 { font-size: 13px; margin-bottom: 10px; }

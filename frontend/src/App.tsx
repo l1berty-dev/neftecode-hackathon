@@ -23,6 +23,8 @@ export default function App({ api, fixtureMode = false }: Props) {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [snapshot, setSnapshot] = useState<ProcessSnapshot | null>(null);
   const [controls, setControls] = useState<ControlDescriptor[]>([]);
+  const [controlIssues, setControlIssues] = useState<string[]>([]);
+  const [episodeName, setEpisodeName] = useState<string | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [history, setHistory] = useState<DecisionSummary[]>([]);
   const [changes, setChanges] = useState<Record<string, number>>({});
@@ -33,9 +35,13 @@ export default function App({ api, fixtureMode = false }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [stale, setStale] = useState(false);
+  const [standaloneEvaluation, setStandaloneEvaluation] = useState<ScenarioEvaluation | null>(null);
+  const [standaloneLoading, setStandaloneLoading] = useState(false);
+  const [standaloneError, setStandaloneError] = useState<string | null>(null);
   const [externalSnapshot, setExternalSnapshot] = useState<ProcessSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const gateRef = useRef(new LatestRequestGate());
+  const evaluationGateRef = useRef(new LatestRequestGate());
   const replayAbortRef = useRef<AbortController | null>(null);
   const navigationRef = useRef(0);
 
@@ -78,15 +84,25 @@ export default function App({ api, fixtureMode = false }: Props) {
     void (async () => {
       setLoading(true);
       try {
-        const [nextHealth, nextControls, current, savedHistory] = await Promise.all([
+        const [nextHealth, nextControls, availableEpisodes, savedHistory] = await Promise.all([
           api.health(controller.signal),
           api.controls(controller.signal),
-          api.currentSnapshot(controller.signal),
+          api.episodes(controller.signal),
           api.savedDecisions(controller.signal),
         ]);
+        const defaultEpisode = availableEpisodes.episodes[0] ?? null;
+        let current: Awaited<ReturnType<Api["currentSnapshot"]>>;
+        try {
+          current = await api.currentSnapshot(controller.signal);
+        } catch (caught) {
+          if (!(caught instanceof ApiError) || caught.status !== 404) throw caught;
+          current = await api.startReplay(defaultEpisode?.episode_id ?? null, controller.signal);
+        }
         if (controller.signal.aborted) return;
         setHealth(nextHealth);
         setControls(nextControls.controls);
+        setControlIssues(nextControls.review_issues);
+        setEpisodeName(defaultEpisode?.name ?? null);
         setSnapshot(current.snapshot);
         setHistory(savedHistory.items);
         await runDecision(current.snapshot, {});
@@ -115,6 +131,8 @@ export default function App({ api, fixtureMode = false }: Props) {
           if (controller.signal.aborted) return;
           setSnapshot(response.snapshot);
           setChanges({});
+          setStandaloneEvaluation(null);
+          setStandaloneError(null);
           setStale(false);
           await runDecision(response.snapshot, {});
         })
@@ -154,7 +172,13 @@ export default function App({ api, fixtureMode = false }: Props) {
     return () => window.clearInterval(timer);
   }, [api, editing, snapshot]);
 
-  useEffect(() => () => replayAbortRef.current?.abort(), []);
+  useEffect(
+    () => () => {
+      replayAbortRef.current?.abort();
+      evaluationGateRef.current.cancel();
+    },
+    [],
+  );
 
   const evaluations = useMemo(() => (decision ? allEvaluations(decision) : []), [decision]);
   const selectedEvaluation = useMemo<ScenarioEvaluation | null>(
@@ -167,6 +191,8 @@ export default function App({ api, fixtureMode = false }: Props) {
     replayAbortRef.current?.abort();
     setRunning(false);
     setEditing(true);
+    setStandaloneEvaluation(null);
+    setStandaloneError(null);
     setChanges((previous) => ({ ...previous, [signalId]: value }));
   };
 
@@ -175,8 +201,34 @@ export default function App({ api, fixtureMode = false }: Props) {
       const next = { ...previous };
       delete next[signalId];
       if (Object.keys(next).length === 0) setEditing(false);
+      setStandaloneEvaluation(null);
+      setStandaloneError(null);
       return next;
     });
+  };
+
+  const evaluateOnly = async () => {
+    if (!snapshot || Object.keys(changes).length === 0 || standaloneLoading) return;
+    const key = `scenario:${requestKey(snapshot.snapshot_id, changes)}`;
+    const token = evaluationGateRef.current.begin(key);
+    setStandaloneLoading(true);
+    setStandaloneError(null);
+    try {
+      const response = await api.evaluate(
+        { snapshot_id: snapshot.snapshot_id, horizon_minutes: 60, changes },
+        token.signal,
+      );
+      if (!evaluationGateRef.current.isCurrent(token, key)) return;
+      setStandaloneEvaluation(response.evaluation);
+      if (response.stale || response.current_snapshot_id !== snapshot.snapshot_id) setStale(true);
+    } catch (caught) {
+      if ((caught as Error).name === "AbortError") return;
+      if (evaluationGateRef.current.isCurrent(token, key)) {
+        setStandaloneError(apiErrorMessage(caught));
+      }
+    } finally {
+      if (evaluationGateRef.current.isCurrent(token, key)) setStandaloneLoading(false);
+    }
   };
 
   const useExternalSnapshot = () => {
@@ -184,6 +236,8 @@ export default function App({ api, fixtureMode = false }: Props) {
     setSnapshot(externalSnapshot);
     setExternalSnapshot(null);
     setChanges({});
+    setStandaloneEvaluation(null);
+    setStandaloneError(null);
     setEditing(false);
     setStale(false);
     void runDecision(externalSnapshot, {});
@@ -203,6 +257,8 @@ export default function App({ api, fixtureMode = false }: Props) {
       setSnapshot(original.snapshot);
       setSelectedId(stored.decision.preferred?.evaluation_id ?? stored.decision.baseline.evaluation_id);
       setChanges({});
+      setStandaloneEvaluation(null);
+      setStandaloneError(null);
       setEditing(false);
       setRunning(false);
       setStale(stored.stale || stored.current_snapshot_id !== original.snapshot.snapshot_id);
@@ -249,7 +305,7 @@ export default function App({ api, fixtureMode = false }: Props) {
         </div>
         <div className="replay-status">
           <span className="live-dot" />
-          <div><strong>Replay · {running ? "идёт" : "пауза"}</strong><span>{formatDate(snapshot.as_of)} МСК</span></div>
+          <div><strong>Replay · {running ? "идёт" : "пауза"}</strong><span>{episodeName ?? "эпизод не указан"} · {formatDate(snapshot.as_of)} МСК</span></div>
           <button className="icon-button" onClick={() => setRunning((value) => !value)} disabled={editing || loading} aria-label={running ? "Поставить replay на паузу" : "Запустить replay"}>{running ? "Ⅱ" : "▶"}</button>
         </div>
       </header>
@@ -307,11 +363,33 @@ export default function App({ api, fixtureMode = false }: Props) {
         </section>
 
         <ControlEditor controls={controls} snapshot={snapshot} changes={changes} disabled={loading} onChange={updateChange} onReset={resetChange} />
+        {controlIssues.length > 0 && (
+          <div className="control-review" role="note">
+            <strong>Ограничения каталога управлений</strong>
+            <ul>{controlIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+          </div>
+        )}
         {editing && (
           <div className="floating-compare">
             <span>{Object.keys(changes).length} измен. · снимок закреплён</span>
+            <button className="secondary-button" onClick={() => void evaluateOnly()} disabled={standaloneLoading || loading || Object.keys(changes).length === 0}>{standaloneLoading ? "Проверяем…" : "Только проверить"}</button>
             <button onClick={() => void runDecision(snapshot, changes)} disabled={loading || Object.keys(changes).length === 0}>Сравнить варианты</button>
           </div>
+        )}
+
+        {(standaloneEvaluation || standaloneError) && (
+          <section className="panel standalone-panel" aria-labelledby="standalone-title">
+            <div className="section-heading">
+              <div><p className="eyebrow">Не меняет выбранный совет</p><h2 id="standalone-title">Отдельная проверка действия</h2></div>
+            </div>
+            {standaloneError && <ErrorNotice message={standaloneError} />}
+            {standaloneEvaluation && (
+              <>
+                <EvaluationCard evaluation={standaloneEvaluation} selected={false} onSelect={() => undefined} />
+                <p className="muted">Чтобы включить этот вариант в общий выбор, нажмите «Сравнить варианты».</p>
+              </>
+            )}
+          </section>
         )}
 
         {selectedEvaluation && <Details evaluation={selectedEvaluation} decision={decision} snapshot={snapshot} />}

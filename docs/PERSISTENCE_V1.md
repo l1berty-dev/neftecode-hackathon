@@ -124,5 +124,6 @@ restart, stale expected_snapshot_id двух Session, episode/FK conflicts и о
 На этапе H `prepare/train` и production composition A–E повторно прошли, а
 PostgreSQL 17 тесты снова дали 6 passed. Frontend G и FastAPI/OpenAPI реализованы;
 backend использует CalculationRepository и ReplayRepository без копирования транзакционной
-логики. Полный browser/API/PostgreSQL E2E ещё не выполнен. Актуальная матрица:
+логики. Полный browser/API/PostgreSQL E2E выполнен 2026-09-21 на свежей временной БД
+без fixture. Актуальная матрица:
 [FINAL_VERIFICATION_V1.md](FINAL_VERIFICATION_V1.md).

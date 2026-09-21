@@ -1,8 +1,7 @@
 # Этап H — итоговая проверка и передача
 
-Дата среза: 2026-09-20. Этот документ фиксирует только фактически выполненные
-проверки текущего `main`. FastAPI/OpenAPI добавлены после исходного H-аудита;
-полный браузерный E2E с backend/PostgreSQL всё ещё не объявляется выполненным.
+Дата среза: 2026-09-21. Этот документ фиксирует только фактически выполненные
+проверки текущего `main`, включая общий браузерный E2E с FastAPI и PostgreSQL.
 
 ## Результат проверки
 
@@ -11,19 +10,28 @@
 | Python lint/format | passed | `ruff check` и `ruff format --check` для репозитория |
 | Python unit/integration без внешней БД | 181 passed, 6 skipped | Контракты, point-in-time данные, обучение, action fail-closed, сценарии, ranking, coordinator, CLI/FastAPI/OpenAPI |
 | PostgreSQL 17 | 6 passed | Alembic с нуля/check, JSONB/TIMESTAMPTZ/FK, rollback, reconnect, save/history, конкурентный replay |
-| Frontend unit/UI | 9 passed ранее; текущий повтор environment-blocked | У второго разработчика тесты прошли; локальный Node 20.18.1 не удовлетворяет требованию зафиксированных Vite/jsdom >=20.19.0, поэтому текущий Vitest не стартовал |
-| Frontend type/build | passed | TypeScript typecheck и production Vite build; Vite при сборке также предупреждает обновить Node до >=20.19.0 |
-| Contract drift | passed | Сгенерированный TypeScript совпадает с `examples/contract_v1.schema.json` |
+| Frontend unit/UI | 13 passed | Replay bootstrap, standalone evaluation, race/stale, history, график и ошибки API |
+| Frontend type/build | passed | TypeScript typecheck и production Vite build на Node 26.0.0 |
+| Contract drift | passed | Доменные типы совпадают с JSON Schema, transport-типы — с checked-in OpenAPI |
 | Данные | passed | `prepare`: dataset `sha256:733562b...a6a6c`, 18 354 049 telemetry rows, 301 904 analyses, 6 events |
 | Модель | passed | `train`: persistence baseline, validation MAE 0.573082, test MAE 0.706412, прежняя version hash воспроизведена |
 | Production composition A–E | passed | Реальный snapshot на `2026-08-06T21:00:00Z` → QualityAgent → Evaluator → Coordinator |
 | HTTP/OpenAPI | passed без внешней БД | 11 routes, request validation, structured errors, readiness и checked-in OpenAPI покрыты HTTP-тестами |
-| Browser → API → PostgreSQL | pending | Все части реализованы, но общий процесс с настоящей БД и браузером ещё не прогнан; fixture не считается E2E |
+| Browser → API → PostgreSQL | passed | Fresh migration, replay start/advance, Decision, standalone scenario, save/history/stale и реальный экран |
 
 PostgreSQL проверялся на отдельном временном Compose project с PostgreSQL 17.
 Fixture удалил только созданные им project/volume; SQLite и пользовательская БД
 не использовались. `data/processed/` и `artifacts/` воспроизведены локально и
 остаются Git-ignored.
+
+Общий E2E выполнен на отдельной свежей БД: health вернул готовность всех трёх
+компонентов; episode `heldout-2026-08-06` создал replay snapshot; `/decisions`
+вернул ожидаемый fail-closed `no_feasible_option`; `/scenarios/evaluate` —
+`rejected`; save был идемпотентен, история прочиталась после записи, advance
+создал новый snapshot, а сохранённый расчёт стал `stale=true`. Затем тот же
+backend был открыт настоящим Vite-приложением в браузере: показаны реальные
+snapshot, прогноз 7.55 мг/кг с интервалом 6.33–8.77, причины закрытых controls,
+решение и история. Fixture в этом прогоне не использовался.
 
 ## Покрытие обязательных сценариев
 
@@ -43,7 +51,9 @@ Fixture удалил только созданные им project/volume; SQLite
   фактически завершил Promise; новый совет не смешивается со старым. История
   запрашивает полный Decision и его исходный snapshot. Ошибка API не отображается
   как `no_feasible_option`; `null` остаётся «не оценено»; график рисует только
-  поддержанную прогнозную точку.
+  поддержанную прогнозную точку. Fresh DB автоматически запускает первый
+  доступный episode. Отдельная проверка action использует `/scenarios/evaluate`
+  и не заменяет выбранный Decision.
 
 Real smoke после свежих `prepare/train` дал snapshot
 `ec456123-367a-57d6-855f-d898f47a33fb`, supported baseline quality,
@@ -73,17 +83,15 @@ npm run build
 `RUN_POSTGRES_TESTS=1` требует работающий Docker. Обычный `pytest` намеренно
 пропускает шесть opt-in PostgreSQL-тестов.
 
-## Что остаётся до полной приёмки H
+## Итог и внешние ограничения
 
-1. Выполнить один общий E2E: миграция → replay snapshot → Decision → operator
-   action → save → history, затем тот же путь из браузера.
-2. Зафиксировать реальные ответы достижимых статусов и HTTP 404/409/422/503 в E2E.
-3. При необходимости добавить OpenAPI-codegen transport envelope для frontend;
-   текущие изолированные типы уже сверены с опубликованной схемой.
-4. Подготовить дополнительные демонстрационные эпизоды. Искусственно
-   испорченный сценарий маркировать synthetic; реальные actions не открывать до
-   появления подтверждённой action-support evidence.
+Этап H для согласованной v1 завершён: код, HTTP, PostgreSQL и браузер проверены
+единым путём. Подготовка нескольких дополнительных демонстрационных эпизодов
+остаётся улучшением презентации, а не разрывом интеграции.
 
-До выполнения этих пунктов H имеет статус **частично выполнен / E2E pending**, а не
-«готовый продукт». Прежний API-блокер снят; оставшаяся работа — проверка собранных частей
-в одном запущенном окружении.
+Реальные изменения P8/T11/F19 намеренно остаются закрыты. Для их активации нужны
+внешние подтверждения единиц/шкал, допустимых train-диапазонов и шага, joint
+action support, counterfactual uncertainty и переходного отклика. Пока этих
+данных нет, честный продуктовый результат — `no_feasible_option`, а не
+синтетическая рекомендация. Это единственный существенный предметный вход,
+которого не хватает для советов с реальными воздействиями.

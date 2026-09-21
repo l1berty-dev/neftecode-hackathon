@@ -1,6 +1,6 @@
 # Frontend v1 — экран советчика оператора
 
-Дата среза: 2026-09-20. Этап G разработчика 2.
+Дата среза: 2026-09-21. Этап G разработчика 2 и интеграционная приёмка H.
 
 ## Что реализовано
 
@@ -21,20 +21,24 @@
 и монотонному поколению с ключом `snapshot_id + action + horizon`. При внешней
 смене снимка результат помечается устаревшим и требует явного пересчёта.
 Сохранение отправляет только server-side `decision_id`; история открывает решение
-вместе с его исходным snapshot.
+вместе с его исходным snapshot. На свежей БД интерфейс получает список эпизодов
+и запускает первый реальный replay, если текущего cursor ещё нет. Кнопка «Только
+проверить» вызывает `/scenarios/evaluate` и показывает результат отдельно;
+«Сравнить варианты» вызывает `/decisions` и только он обновляет общий совет.
 
 ## Контракты и текущая граница интеграции
 
 Доменные TypeScript-типы генерируются из
 `examples/contract_v1.schema.json` командой `npm run generate:contracts`.
-Файл `src/api/contracts.generated.ts` нельзя редактировать вручную. Все HTTP-вызовы
-собраны в `src/api/http.ts`.
+Той же командой transport-типы генерируются из `examples/openapi.v1.json`.
+Файлы `src/api/contracts.generated.ts` и `src/api/openapi.generated.ts` нельзя
+редактировать вручную. `npm run check:contracts` проверяет drift обоих источников.
+Все HTTP-вызовы собраны в `src/api/http.ts`.
 
-FastAPI routes и OpenAPI теперь находятся в репозитории. Транспортные envelope-типы
-(`HealthResponse`, `ControlsResponse`, `SnapshotResponse`, `DecisionResponse`) остаются
-изолированы в `src/api/types.ts` и сверены с `examples/openapi.v1.json`: nullable episode,
-operator label/changes, controls, ошибки, save/history согласованы. Полный реальный E2E
-с backend/PostgreSQL пока не заявляется выполненным.
+FastAPI routes и OpenAPI находятся в репозитории. Транспортные envelope-типы
+генерируются из OpenAPI, а `src/api/types.ts` только связывает их с доменными
+типами общей JSON Schema. Nullable episode, operator label/changes, controls,
+standalone scenario, ошибки, save/history согласованы без ручной второй схемы.
 
 По умолчанию приложение обращается к `/api/v1`; Vite проксирует `/api` на
 `http://127.0.0.1:8000`. Статический synthetic fixture включается только через
@@ -67,26 +71,25 @@ npm test
 npm run build
 ```
 
-На срезе 2026-09-20 прошли TypeScript typecheck, 9 тестов в 4 файлах и production
-build Vite. Проверены drift generated contracts, реальная UI-гонка позднего ответа,
+На срезе 2026-09-21 прошли TypeScript typecheck, 13 тестов в 5 файлах и production
+build Vite на Node 26.0.0. Проверены drift обоих generated contracts, HTTP adapter,
+fresh-DB replay bootstrap, standalone evaluation, реальная UI-гонка позднего ответа,
 стабильный request key и открытие истории с исходным snapshot,
 отображение unknown, отсутствие вымышленной прогнозной линии, неподдерживаемый
 прогноз, маркировка fixture, save по decision_id и отдельное представление ошибки API.
 
-После объединения с FastAPI contract drift, typecheck и production build повторно
-прошли. Локальный повтор Vitest на Node 20.18.1 не стартовал из-за engine requirement;
-это ограничение среды, для полного повторного прогона нужен Node >=20.19.0.
+Общий browser → FastAPI → PostgreSQL E2E также прошёл в реальном режиме без fixture:
+интерфейс загрузил episode/snapshot, получил Decision, показал прогноз и причины
+закрытых controls, а сохранённое решение прочиталось из серверной истории.
 
 `npm install` сообщил о двух moderate advisory в дереве dev-зависимостей. Автоматический
 `npm audit fix --force` не выполнялся, чтобы не вносить непроверенные breaking changes;
 `npm audit --omit=dev` подтвердил 0 production vulnerabilities. Перед выпуском надо
 разобрать dev advisory и обновить lock-файл контролируемо.
 
-## Следующая интеграция
+## Оставшиеся предметные ограничения
 
-1. При добавлении OpenAPI-codegen заменить согласованные envelope-типы генерируемыми.
-2. Сверить реальные ответы всех достижимых DecisionStatus и ошибки 404/409/422/503.
-3. Прогнать совместный путь PostgreSQL migration → replay snapshot → Decision →
-   operator action → save → history и браузерную проверку узкого экрана/клавиатуры.
-4. Не открывать controls, пока backend возвращает `available=false`; fixture не
-   является основанием активировать реальные воздействия.
+Не открывать controls, пока backend возвращает `available=false`: нужны внешние
+единицы/шкалы, диапазоны и доказательства action support. Fixture не является
+основанием активировать реальные воздействия. Дополнительная проверка узкого
+экрана реальными пользователями остаётся UX-улучшением, но не блокирует v1.

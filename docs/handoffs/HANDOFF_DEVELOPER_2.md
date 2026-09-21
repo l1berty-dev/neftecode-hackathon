@@ -26,7 +26,7 @@
 
 ### Реальное состояние репозитория
 
-Срез на 2026-09-20, проверенный по коду и последним фактическим проверкам:
+Срез на 2026-09-21, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train/evaluate/serve, SnapshotProvider, единый
@@ -68,22 +68,22 @@
   history list и конкурентный replay. Передача API: [PERSISTENCE_V1.md](../PERSISTENCE_V1.md).
 - Этап G разработчика 2 реализован: React/TypeScript/Vite экран replay, Decision,
   отдельной прогнозной точки, сравнения, каталога управлений, details и истории.
-  Доменные типы генерируются из общей JSON Schema; HTTP adapter единый, fixture
+  Доменные типы генерируются из общей JSON Schema, transport-типы — из OpenAPI;
+  HTTP adapter единый, fixture
   явно маркирован и выключен по умолчанию. Late responses защищены abort + generation key,
-  редактирование ставит replay на паузу, save использует server decision_id.
-  Transport envelopes сверены с опубликованным OpenAPI; полный browser/PostgreSQL E2E ещё
-  должен быть повторён на запущенном общем окружении. Подробнее: [FRONTEND_V1.md](../FRONTEND_V1.md).
-- Этап H проверен в доступной интеграционной границе: prepare/train и реальная
-  композиция A–E воспроизведены, PostgreSQL 17 повторно проверен, frontend получил
-  race/history и contract-drift тесты. Прежний блокер FastAPI/OpenAPI снят; полный
-  HTTP/browser/PostgreSQL E2E ещё не считается выполненным. Матрица и команды:
+  редактирование ставит replay на паузу, отдельная оценка идёт через
+  `/scenarios/evaluate`, save использует server decision_id. Подробнее:
+  [FRONTEND_V1.md](../FRONTEND_V1.md).
+- Этап H завершён для v1: prepare/train и реальная композиция A–E воспроизведены,
+  PostgreSQL 17 повторно проверен, frontend получил race/history, fresh replay,
+  standalone evaluation и двойную contract-drift проверку. Общий путь browser →
+  FastAPI → PostgreSQL прошёл на свежей временной БД без fixture. Матрица и команды:
   [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
-- Последние проверки до финального коммита F: Ruff check/format --check прошли; обычный pytest —
+- Последние полные проверки: Ruff check/format --check прошли; обычный pytest —
   181 passed, 6 skipped. Отдельно PostgreSQL 17 ранее — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
-  Frontend после интеграции: contract drift/typecheck и production build прошли. Прежний
-  прогон второго разработчика дал 9 tests passed; текущий повтор на Node 20.18.1 не стартовал,
-  потому что зафиксированные Vite/jsdom-зависимости требуют Node >=20.19.0.
+  Frontend после интеграции: 13 tests, JSON Schema/OpenAPI drift, typecheck и production
+  build прошли на Node 26.0.0; production dependency audit — 0 vulnerabilities.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
@@ -628,16 +628,18 @@ FastAPI первого теперь потребляет эти repositories, Op
 
 ### G. Frontend после работающего общего расчёта
 
-Статус на 2026-09-20: техническая часть G выполнена в `frontend/`. Реализован
-единый адаптивный экран, общий API client, генерация доменных типов из JSON Schema,
+Статус на 2026-09-21: техническая часть G выполнена в `frontend/`. Реализован
+единый адаптивный экран, общий API client, генерация доменных типов из JSON Schema
+и transport-типов из OpenAPI,
 атомарное обновление сравнения, защита от поздних ответов, replay pause/stale flow,
-save/history и fail-visible состояния. Fixture статический, заметно маркирован и
-выключен по умолчанию; он не притворяется моделью действий. Typecheck, 7 unit/UI
-тестов и production build прошли. Подробности: [FRONTEND_V1.md](../FRONTEND_V1.md).
+standalone evaluation, save/history и fail-visible состояния. Fixture статический,
+заметно маркирован и выключен по умолчанию; он не притворяется моделью действий.
+Typecheck, 13 unit/UI тестов и production build прошли. Подробности:
+[FRONTEND_V1.md](../FRONTEND_V1.md).
 
-FastAPI routes и OpenAPI теперь реализованы первым; transport envelopes сверены с опубликованной
-схемой, реальный режим остаётся default. Полный E2E с PostgreSQL ещё не выполнен. Проверить
-реальные ответы/ошибки и выполнить совместный H. Исходные критерии G ниже сохранены.
+FastAPI routes и OpenAPI реализованы первым; transport envelopes генерируются из
+опубликованной схемы, реальный режим остаётся default. Общий browser → API → PostgreSQL
+E2E выполнен на свежей временной БД. Исходные критерии G ниже сохранены.
 
 Стек React + TypeScript + Vite. Получить OpenAPI от первого разработчика; генерировать типы, не поддерживать вручную вторую несовместимую копию схемы. Использовать один API client.
 
@@ -667,16 +669,16 @@ UX:
 
 ### H. Тесты и финальная передача
 
-Статус на 2026-09-20: доступная часть H выполнена. Добавлена проверка drift между
-общей JSON Schema и generated TypeScript, а UI-тест воспроизводит настоящую гонку:
+Статус на 2026-09-21: H выполнен для согласованной v1. Добавлена проверка drift между
+общей JSON Schema/OpenAPI и generated TypeScript, а UI-тест воспроизводит настоящую гонку:
 Promise старого action завершается после перехода к новому snapshot и не меняет
 новый Decision. История проверена на загрузку server Decision вместе с исходным
-snapshot. Frontend: 9 tests, typecheck, build. Повторно прошли prepare/train,
+snapshot; fresh DB запускает реальный episode, standalone action не заменяет Decision.
+Frontend: 13 tests, typecheck, build. Повторно прошли prepare/train,
 real smoke A–E и 6/6 на отдельном PostgreSQL 17.
 
-Прежний блокер FastAPI/OpenAPI снят. Полная приёмка H остаётся незавершённой до фактического
-browser → API → PostgreSQL E2E и HTTP status/error matrix; fixture не заменяет этот прогон.
-Точная обновлённая матрица и команды:
+Общий browser → API → PostgreSQL E2E прошёл без fixture: migration, replay,
+Decision/scenario, save/history и stale после advance. Точная матрица и команды:
 [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
 
 Unit:

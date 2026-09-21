@@ -49,19 +49,19 @@
 Такой результат целостен: отсутствие подтверждений не превращается в `no_change`, допустимый
 сценарий или рекомендацию.
 
-## Что не потеряно, но относится к следующим этапам
+## Состояние последующих этапов
 
 | Работа | Владелец/этап | Текущее состояние |
 | --- | --- | --- |
 | Replay repository и transactional advance | разработчик 2, F | Выполнено после аудита A–E; expected_snapshot_id и гонка двух Session проверены |
 | Полная persistence-транзакция решения и evaluations | разработчик 2, F | Выполнено и подключено API через CalculationRepository; standalone evaluation сохраняется отдельно |
 | `evaluate` и `serve`, FastAPI/OpenAPI | разработчик 1, F | Выполнено; 11 routes, статический OpenAPI и HTTP-тесты |
-| PostgreSQL E2E после API | совместно F/H | PostgreSQL отдельно проверен 6/6; полный HTTP/browser путь ещё впереди |
-| React и защита от stale responses | разработчик 2, G | Выполнено; 9 тестов, typecheck/build, transport сверены с OpenAPI |
+| PostgreSQL E2E после API | совместно F/H | Выполнено на свежей PostgreSQL 17: HTTP и браузерный путь без fixture |
+| React и защита от stale responses | разработчик 2, G | Выполнено; 13 тестов, typecheck/build, transport генерируется из OpenAPI |
 | Демо полезного изменения | совместно | Заблокировано отсутствием защищаемого action effect; не заменяется synthetic результатом |
 
-Оба F и frontend G реализованы. Следующий корректный шаг — совместный browser → API →
-PostgreSQL E2E; отсутствие action-support остаётся честным продуктовым ограничением.
+Оба F, frontend G и совместный H/E2E реализованы. Отсутствие action-support остаётся
+честным продуктовым ограничением.
 
 ## Проверки аудита
 
