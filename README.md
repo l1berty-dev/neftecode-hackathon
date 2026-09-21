@@ -22,20 +22,35 @@ Parquet/JSON-артефакты в `data/processed/`. Этот каталог и
 [docs/ACTION_ASSESSMENT_V1.md](docs/ACTION_ASSESSMENT_V1.md).
 Экран советчика, его проверенные команды и интеграция с FastAPI:
 [docs/FRONTEND_V1.md](docs/FRONTEND_V1.md).
-Итоговая матрица H с фактически пройденными проверками и оставшимся полным E2E:
+Итоговая матрица H с фактически пройденными проверками и результатом полного E2E:
 [docs/FINAL_VERIFICATION_V1.md](docs/FINAL_VERIFICATION_V1.md).
 Матрица передач между разработчиками и список следующих незакрытых этапов:
 [docs/INTEGRATION_AUDIT_A_E.md](docs/INTEGRATION_AUDIT_A_E.md).
 
 ## PostgreSQL и API
 
-После `prepare` и `train` создайте локальный `.env` по `.env.example`, замените пароль
-и передайте `DATABASE_URL` процессам Alembic и backend. Секреты не коммитятся.
+Полный порядок чистого локального запуска: синхронизировать Python-окружение,
+подготовить данные и модель, создать локальный `.env`, поднять PostgreSQL, применить
+миграцию, запустить API и только затем frontend. Замените пароль в `.env`; секреты
+не коммитятся. Команды backend выполняются из корня репозитория.
 
 ```bash
+uv sync --frozen
+uv run neftecode-hackathon prepare
+uv run neftecode-hackathon train
+cp .env.example .env
 docker compose up -d --wait
-uv run alembic upgrade head
-uv run neftecode-hackathon serve
+uv run --env-file .env alembic upgrade head
+uv run --env-file .env neftecode-hackathon serve
+```
+
+В отдельном терминале:
+
+```bash
+cd frontend
+npm ci
+cp .env.example .env.local
+npm run dev
 ```
 
 Backend доступен только локально: `http://127.0.0.1:8000`. Проверка готовности —

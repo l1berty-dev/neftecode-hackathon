@@ -29,8 +29,10 @@ uv run neftecode-hackathon serve
 1. Выполнить `prepare` и `train`.
 2. Создать локальный `.env` по `.env.example`, заменив пароль; секрет не коммитить.
 3. Запустить `docker compose up -d --wait`.
-4. Передать тот же `DATABASE_URL` процессам Alembic и backend.
-5. Выполнить `uv run alembic upgrade head` и `uv run neftecode-hackathon serve`.
+4. Передать тот же `DATABASE_URL` процессам Alembic и backend, например через
+   `uv run --env-file .env ...`; один только файл `.env` Python автоматически не читает.
+5. Выполнить `uv run --env-file .env alembic upgrade head` и
+   `uv run --env-file .env neftecode-hackathon serve`.
 6. Проверить `GET http://127.0.0.1:8000/api/v1/health`.
 
 Без подготовленных данных, модели или БД health остаётся доступен, но `ready=false`; рабочие

@@ -19,6 +19,13 @@
 | HTTP/OpenAPI | passed без внешней БД | 11 routes, request validation, structured errors, readiness и checked-in OpenAPI покрыты HTTP-тестами |
 | Browser → API → PostgreSQL | passed | Fresh migration, replay start/advance, Decision, standalone scenario, save/history/stale и реальный экран |
 
+Повторная приёмка разработчика 1 на актуальном `main` 2026-09-21 подтвердила:
+экспорт JSON Schema/OpenAPI без содержательного drift, Ruff, `181 passed, 6 skipped`,
+реальный CLI `evaluate`, frontend contract checks/typecheck, 13 тестов и production
+build на Node 24.19.0. После восстановления повреждённых Docker runtime sockets
+отдельный PostgreSQL 17 suite также повторно прошёл: 6/6 на временной БД.
+Browser E2E ниже относится к предыдущему прогону второго разработчика на том же коде.
+
 PostgreSQL проверялся на отдельном временном Compose project с PostgreSQL 17.
 Fixture удалил только созданные им project/volume; SQLite и пользовательская БД
 не использовались. `data/processed/` и `artifacts/` воспроизведены локально и

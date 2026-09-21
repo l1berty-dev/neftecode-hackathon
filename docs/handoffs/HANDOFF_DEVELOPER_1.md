@@ -80,10 +80,12 @@
   FastAPI → PostgreSQL прошёл на свежей временной БД без fixture. Матрица и команды:
   [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
 - Последние полные проверки: Ruff check/format --check прошли; обычный pytest —
-  181 passed, 6 skipped. Отдельно PostgreSQL 17 ранее — 6 passed: migration/check с нуля,
+  181 passed, 6 skipped. PostgreSQL 17 повторно проверен первым после восстановления
+  Docker runtime sockets — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
   Frontend после интеграции: 13 tests, JSON Schema/OpenAPI drift, typecheck и production
-  build прошли на Node 26.0.0; production dependency audit — 0 vulnerabilities.
+  build повторно прошли на Node 24.19.0 (исходная приёмка — Node 26.0.0);
+  production dependency audit — 0 vulnerabilities.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
@@ -694,10 +696,17 @@ CLI использует те же сервисы и оценку, что API; �
 
 ### G. Завершить проверку и документацию
 
-**Статус H на 2026-09-21:** блокер FastAPI/OpenAPI снят, transport boundary frontend
-генерируется из OpenAPI. Python и frontend suites проходят; PostgreSQL отдельно проверен
-6/6. Полный browser → API → PostgreSQL E2E прошёл на свежей временной БД без fixture,
-см. [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
+**Статус G на 2026-09-21: выполнен по актуальному `main`.** Повторная приёмка
+разработчика 1 подтвердила экспорт JSON Schema/OpenAPI без содержательного drift,
+Ruff, `181 passed, 6 skipped`, реальный CLI `evaluate`, frontend contract checks,
+typecheck, 13 тестов и production build на Node 24.19.0. README теперь содержит
+полный порядок чистого запуска от `uv sync --frozen` до `npm run dev`.
+
+После восстановления повреждённых Docker runtime sockets шесть PostgreSQL opt-in
+тестов повторно прошли 6/6 на отдельной временной БД. Полный browser → API →
+PostgreSQL E2E ранее прошёл без fixture у второго разработчика на том же коде.
+Подтверждённые результаты и точные команды сохранены в
+[FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md). План и критерии ниже сохранены.
 
 Твои тесты:
 - обе Excel-структуры разбираются независимо по времени;

@@ -80,10 +80,12 @@
   FastAPI → PostgreSQL прошёл на свежей временной БД без fixture. Матрица и команды:
   [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
 - Последние полные проверки: Ruff check/format --check прошли; обычный pytest —
-  181 passed, 6 skipped. Отдельно PostgreSQL 17 ранее — 6 passed: migration/check с нуля,
+  181 passed, 6 skipped. PostgreSQL 17 повторно проверен первым после восстановления
+  Docker runtime sockets — 6 passed: migration/check с нуля,
   JSONB/TIMESTAMPTZ/FK, reconnect, rollback, save и две конкурирующие replay Session.
   Frontend после интеграции: 13 tests, JSON Schema/OpenAPI drift, typecheck и production
-  build прошли на Node 26.0.0; production dependency audit — 0 vulnerabilities.
+  build повторно прошли на Node 24.19.0 (исходная приёмка — Node 26.0.0);
+  production dependency audit — 0 vulnerabilities.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
@@ -680,6 +682,11 @@ real smoke A–E и 6/6 на отдельном PostgreSQL 17.
 Общий browser → API → PostgreSQL E2E прошёл без fixture: migration, replay,
 Decision/scenario, save/history и stale после advance. Точная матрица и команды:
 [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
+
+Повторная приёмка G первым разработчиком на актуальном `main` также прошла:
+Ruff, `181 passed, 6 skipped`, реальный CLI `evaluate`, frontend contract checks,
+typecheck, 13 тестов/build на Node 24.19.0 и PostgreSQL 6/6. README и API-инструкция
+уточнены полным порядком чистого запуска через `uv run --env-file .env`.
 
 Unit:
 - no-op action;
