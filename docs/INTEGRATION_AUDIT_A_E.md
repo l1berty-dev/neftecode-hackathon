@@ -1,6 +1,6 @@
 # Интеграционный аудит этапов A–E
 
-Срез на 2026-09-16. Документ проверяет передачи между двумя маршрутами по текущему коду,
+Срез актуализирован 2026-09-22. Документ проверяет передачи между двумя маршрутами по текущему коду,
 конфигурации, тестам и локальному real smoke. Он не заменяет исходные планы в handoff.
 
 ## Матрица выполнения
@@ -57,7 +57,7 @@
 | Полная persistence-транзакция решения и evaluations | разработчик 2, F | Выполнено и подключено API через CalculationRepository; standalone evaluation сохраняется отдельно |
 | `evaluate` и `serve`, FastAPI/OpenAPI | разработчик 1, F | Выполнено; 11 routes, статический OpenAPI и HTTP-тесты |
 | PostgreSQL E2E после API | совместно F/H | Выполнено на свежей PostgreSQL 17: HTTP и браузерный путь без fixture |
-| React и защита от stale responses | разработчик 2, G | Выполнено; 13 тестов, typecheck/build, transport генерируется из OpenAPI |
+| React и защита от stale responses | разработчик 2, G | Выполнено; 13 тестов, typecheck/build, transport генерируется из OpenAPI; повторяющиеся explanation/trace имеют уникальные React keys |
 | Демо полезного изменения | совместно | Заблокировано отсутствием защищаемого action effect; не заменяется synthetic результатом |
 
 Оба F, frontend G и совместный H/E2E реализованы. Отсутствие action-support остаётся
@@ -69,5 +69,8 @@
 - `uv run ruff format --check .`
 - После объединения F `uv run pytest`: 181 passed, 6 skipped; пропущены только opt-in PostgreSQL tests.
 - После F отдельный PostgreSQL 17: 6 passed; временный Compose project/volume удалён.
+- 2026-09-22 полный HTTP/browser E2E независимо повторён на новой PostgreSQL 17:
+  save/history/stale и открытие исходного snapshot прошли; найденный console defect
+  с дублирующимися React keys исправлен и покрыт регрессионным UI-тестом.
 - Два последовательных запуска `train` дали одинаковую model version и одинаковые метрики.
 - `git diff --check` прошёл; производные data/artifacts остаются Git-ignored.

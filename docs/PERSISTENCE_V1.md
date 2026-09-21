@@ -10,8 +10,9 @@ scenario_evaluations и единственная строка replay_state уж�
 
 Чистые расчёты не обращаются к БД. Persistence получает и возвращает общие
 `ProcessSnapshot` и `Decision` из `contracts.py`; для replay используется
-внутренний immutable `ReplayPosition`, поскольку публичного API-контракта replay
-пока нет. Payload хранится полностью в JSONB, а поля для FK/поиска — отдельно.
+внутренний immutable `ReplayPosition`, поскольку доменного DTO replay в
+`contracts.py` нет. Публичные HTTP-конверты replay определены в FastAPI/OpenAPI.
+Payload хранится полностью в JSONB, а поля для FK/поиска — отдельно.
 
 - `SnapshotRepository.put/get`: immutable snapshot с UUID, TIMESTAMPTZ,
   mode/dataset_version и полным JSONB.

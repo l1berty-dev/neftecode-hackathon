@@ -10,7 +10,10 @@ import { ApiError } from "./api/types";
 
 const sample = fixture as unknown as ContractExample;
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 describe("App", () => {
   it("marks fixture mode and saves by the server decision id", async () => {
@@ -53,9 +56,21 @@ describe("App", () => {
 
   it("opens saved history with its original snapshot", async () => {
     const api = new FixtureApi();
-    await api.saveDecision(sample.decision.decision_id);
+    const repeatedReason = "Повторяющееся пояснение остаётся отдельным пунктом.";
+    const savedDecision: Decision = {
+      ...sample.decision,
+      explanation: [...sample.decision.explanation, repeatedReason, repeatedReason],
+      trace: [sample.decision.trace[0], sample.decision.trace[0]],
+    };
+    vi.spyOn(api, "decision").mockResolvedValue({
+      decision: savedDecision,
+      current_snapshot_id: sample.snapshot.snapshot_id,
+      stale: false,
+    });
+    await api.saveDecision(savedDecision.decision_id);
     const loadDecision = vi.spyOn(api, "decision");
     const loadSnapshot = vi.spyOn(api, "snapshot");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const user = userEvent.setup();
     render(<App api={api} />);
 
@@ -68,6 +83,8 @@ describe("App", () => {
       expect(loadDecision).toHaveBeenCalledWith(sample.decision.decision_id);
       expect(loadSnapshot).toHaveBeenCalledWith(sample.snapshot.snapshot_id);
     });
+    expect(screen.getAllByText(repeatedReason)).toHaveLength(2);
+    expect(consoleError.mock.calls.flat().join(" ")).not.toContain("same key");
   });
 
   it("checks one operator action without replacing the current decision", async () => {

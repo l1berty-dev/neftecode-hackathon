@@ -1,7 +1,8 @@
 # Этап H — итоговая проверка и передача
 
-Дата среза: 2026-09-21. Этот документ фиксирует только фактически выполненные
-проверки текущего `main`, включая общий браузерный E2E с FastAPI и PostgreSQL.
+Дата среза: 2026-09-22. Этот документ фиксирует только фактически выполненные
+проверки рабочего дерева поверх актуального `main`, включая общий браузерный E2E
+с FastAPI и PostgreSQL.
 
 ## Результат проверки
 
@@ -11,7 +12,7 @@
 | Python unit/integration без внешней БД | 181 passed, 6 skipped | Контракты, point-in-time данные, обучение, action fail-closed, сценарии, ranking, coordinator, CLI/FastAPI/OpenAPI |
 | PostgreSQL 17 | 6 passed | Alembic с нуля/check, JSONB/TIMESTAMPTZ/FK, rollback, reconnect, save/history, конкурентный replay |
 | Frontend unit/UI | 13 passed | Replay bootstrap, standalone evaluation, race/stale, history, график и ошибки API |
-| Frontend type/build | passed | TypeScript typecheck и production Vite build на Node 26.0.0 |
+| Frontend type/build | passed | TypeScript typecheck и production Vite build на Node 24.19.0 |
 | Contract drift | passed | Доменные типы совпадают с JSON Schema, transport-типы — с checked-in OpenAPI |
 | Данные | passed | `prepare`: dataset `sha256:733562b...a6a6c`, 18 354 049 telemetry rows, 301 904 analyses, 6 events |
 | Модель | passed | `train`: persistence baseline, validation MAE 0.573082, test MAE 0.706412, прежняя version hash воспроизведена |
@@ -24,7 +25,15 @@
 реальный CLI `evaluate`, frontend contract checks/typecheck, 13 тестов и production
 build на Node 24.19.0. После восстановления повреждённых Docker runtime sockets
 отдельный PostgreSQL 17 suite также повторно прошёл: 6/6 на временной БД.
-Browser E2E ниже относится к предыдущему прогону второго разработчика на том же коде.
+Browser E2E ниже первоначально выполнил второй разработчик; 2026-09-22 первый
+разработчик независимо повторил его на новой временной БД.
+
+Финальная приёмка 2026-09-22 заново подняла отдельную чистую PostgreSQL 17,
+выполнила Alembic upgrade/check и повторила полный HTTP/browser путь. UI сохранил
+текущее решение, добавил его в историю и открыл прежний Decision вместе с его
+исходным snapshot, корректно пометив расчёт устаревшим. Проверка консоли выявила
+повторяющиеся React keys в одинаковых explanation/trace; дефект исправлен и
+закрыт регрессионным UI-тестом. После исправления новых ошибок консоли нет.
 
 PostgreSQL проверялся на отдельном временном Compose project с PostgreSQL 17.
 Fixture удалил только созданные им project/volume; SQLite и пользовательская БД
@@ -38,7 +47,8 @@ Fixture удалил только созданные им project/volume; SQLite
 создал новый snapshot, а сохранённый расчёт стал `stale=true`. Затем тот же
 backend был открыт настоящим Vite-приложением в браузере: показаны реальные
 snapshot, прогноз 7.55 мг/кг с интервалом 6.33–8.77, причины закрытых controls,
-решение и история. Fixture в этом прогоне не использовался.
+решение и история. Сохранение из UI и возврат к исходному snapshot проверены
+отдельно. Fixture в этом прогоне не использовался.
 
 ## Покрытие обязательных сценариев
 

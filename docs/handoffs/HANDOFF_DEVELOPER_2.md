@@ -26,7 +26,7 @@
 
 ### Реальное состояние репозитория
 
-Срез на 2026-09-21, проверенный по коду и последним фактическим проверкам:
+Срез на 2026-09-22, проверенный по коду и последним фактическим проверкам:
 - Python 3.14; зависимости данных, модели, FastAPI и PostgreSQL уже в pyproject/lock.
 - Реализованы contracts.py, протокол QualityAgent, общий synthetic fixture и JSON Schema.
 - Реализованы загрузка/аудит, CLI prepare/train/evaluate/serve, SnapshotProvider, единый
@@ -44,7 +44,7 @@
   действия остаются неподдержанными по versioned blockers, а не из-за отсутствия механизма.
   Этап F первого добавил все маршруты FastAPI, versioned OpenAPI и общий application service.
   Этап G второго собрал frontend против того же `/api/v1`; transport shapes согласованы.
-- Статус маршрута разработчика 1: A–F реализованы. В E применимость действий воспроизводимо
+- Статус маршрута разработчика 1: A–H реализованы. В E применимость действий воспроизводимо
   проверена и заблокирована: данных недостаточно для защищаемой оценки эффекта. Это штатный
   `unsupported` без чисел; API не превращает его в рекомендацию.
 - Артефакт E содержит train-only raw audit P8/T11/F19, отдельные blocker codes, невалидированное
@@ -86,6 +86,9 @@
   Frontend после интеграции: 13 tests, JSON Schema/OpenAPI drift, typecheck и production
   build повторно прошли на Node 24.19.0 (исходная приёмка — Node 26.0.0);
   production dependency audit — 0 vulnerabilities.
+  Финальная браузерная проверка 2026-09-22 повторила save/history/stale на реальном
+  API и выявила дублирующиеся React keys в пояснениях; дефект исправлен, а UI-тест
+  теперь покрывает повторяющиеся explanation/trace без ошибок консоли.
   Временный Compose project/volume удалён. База пользователя не использовалась.
   Реальный smoke E первого исторически прошёл на `2026-08-06T21:00:00Z`;
   Git-ignored `data/processed/` и `artifacts/` не входят в репозиторий; на H они
@@ -671,7 +674,7 @@ UX:
 
 ### H. Тесты и финальная передача
 
-Статус на 2026-09-21: H выполнен для согласованной v1. Добавлена проверка drift между
+Статус на 2026-09-22: H выполнен для согласованной v1. Добавлена проверка drift между
 общей JSON Schema/OpenAPI и generated TypeScript, а UI-тест воспроизводит настоящую гонку:
 Promise старого action завершается после перехода к новому snapshot и не меняет
 новый Decision. История проверена на загрузку server Decision вместе с исходным
@@ -682,6 +685,11 @@ real smoke A–E и 6/6 на отдельном PostgreSQL 17.
 Общий browser → API → PostgreSQL E2E прошёл без fixture: migration, replay,
 Decision/scenario, save/history и stale после advance. Точная матрица и команды:
 [FINAL_VERIFICATION_V1.md](../FINAL_VERIFICATION_V1.md).
+
+Финальный повторный browser E2E 2026-09-22 обнаружил дублирующиеся React keys при
+открытии сохранённого Decision с одинаковыми explanation/trace. Ключи исправлены,
+добавлен регрессионный UI-тест; save и переход к исходному snapshot повторно
+проверены через реальный API, новых ошибок консоли после исправления нет.
 
 Повторная приёмка G первым разработчиком на актуальном `main` также прошла:
 Ruff, `181 passed, 6 skipped`, реальный CLI `evaluate`, frontend contract checks,

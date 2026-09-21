@@ -24,7 +24,7 @@ Parquet/JSON-артефакты в `data/processed/`. Этот каталог и
 [docs/FRONTEND_V1.md](docs/FRONTEND_V1.md).
 Итоговая матрица H с фактически пройденными проверками и результатом полного E2E:
 [docs/FINAL_VERIFICATION_V1.md](docs/FINAL_VERIFICATION_V1.md).
-Матрица передач между разработчиками и список следующих незакрытых этапов:
+Матрица передач между разработчиками и честно зафиксированных внешних ограничений:
 [docs/INTEGRATION_AUDIT_A_E.md](docs/INTEGRATION_AUDIT_A_E.md).
 
 ## PostgreSQL и API

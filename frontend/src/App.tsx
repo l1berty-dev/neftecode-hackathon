@@ -328,7 +328,7 @@ export default function App({ api, fixtureMode = false }: Props) {
             {decision ? (
               <>
                 <p className="decision-lead">{decision.preferred?.action.label ?? "Изменение не выбрано"}</p>
-                <ul className="reason-list">{decision.explanation.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+                <ul className="reason-list">{decision.explanation.map((reason, index) => <li key={`${index}-${reason}`}>{reason}</li>)}</ul>
                 <div className="decision-actions">
                   <button onClick={save} disabled={saving || saved || stale}>{saving ? "Сохраняем…" : saved ? "Сохранено" : "Сохранить решение"}</button>
                   <span>ID {decision.decision_id.slice(0, 8)}</span>
@@ -366,7 +366,7 @@ export default function App({ api, fixtureMode = false }: Props) {
         {controlIssues.length > 0 && (
           <div className="control-review" role="note">
             <strong>Ограничения каталога управлений</strong>
-            <ul>{controlIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+            <ul>{controlIssues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}</ul>
           </div>
         )}
         {editing && (
@@ -413,7 +413,7 @@ function Details({ evaluation, decision, snapshot }: { evaluation: ScenarioEvalu
       <div className="detail-columns">
         <div><h3>Жёсткие проверки</h3><ul className="check-list">{evaluation.checks.map((check) => <li key={check.code} className={check.passed === true ? "pass" : check.passed === false ? "fail" : "unknown"}><span>{check.passed === true ? "✓" : check.passed === false ? "×" : "?"}</span><div><strong>{check.message}</strong><small>{check.code} · факт {formatNumber(check.actual)} / предел {formatNumber(check.limit)} {check.unit ?? ""}</small></div></li>)}</ul></div>
         <div><h3>Тяжесть режима</h3><p className="muted">Это не вероятность аварии и не ресурс катализатора.</p><ul className="factor-list">{evaluation.reliability.factors.map((factor) => <li key={factor.name}><strong>{factor.name}: {formatNumber(factor.contribution)}</strong><span>{factor.explanation}</span></li>)}</ul>{!evaluation.reliability.transition_assessed && <p className="warning-copy">Переход к новой уставке не оценён.</p>}</div>
-        <div><h3>Версии и след</h3><dl className="version-list"><div><dt>Данные</dt><dd>{snapshot.dataset_version}</dd></div><div><dt>Модель</dt><dd>{evaluation.model_version}</dd></div><div><dt>Ограничения</dt><dd>{evaluation.constraint_version}</dd></div></dl><ol className="trace-list">{decision?.trace.map((entry) => <li key={`${entry.role}-${entry.output_summary}`}><strong>{entry.role}</strong><span>{entry.output_summary}</span></li>)}</ol></div>
+        <div><h3>Версии и след</h3><dl className="version-list"><div><dt>Данные</dt><dd>{snapshot.dataset_version}</dd></div><div><dt>Модель</dt><dd>{evaluation.model_version}</dd></div><div><dt>Ограничения</dt><dd>{evaluation.constraint_version}</dd></div></dl><ol className="trace-list">{decision?.trace.map((entry, index) => <li key={`${index}-${entry.role}-${entry.output_summary}`}><strong>{entry.role}</strong><span>{entry.output_summary}</span></li>)}</ol></div>
       </div>
     </section>
   );
