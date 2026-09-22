@@ -7,11 +7,11 @@ const executablePath =
   process.env.CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const outputDirectory = resolve(import.meta.dirname, "../../docs/assets");
 const scenarios = [
-  ["stable-k5", "Сохранить текущий режим"],
-  ["sulfur-shock", "Рекомендуется изменение"],
-  ["operator-wins", "Рекомендуется изменение"],
+  ["stable-k5", "Сохранить настройки"],
+  ["sulfur-shock", "Рекомендуется модельное изменение"],
+  ["operator-wins", "Рекомендуется модельное изменение"],
   ["missing-data", "Недостаточно данных"],
-  ["cetane-blending", "Сохранить текущий режим"],
+  ["cetane-blending", "Сохранить настройки"],
 ];
 
 await mkdir(outputDirectory, { recursive: true });
