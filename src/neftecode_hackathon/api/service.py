@@ -19,22 +19,33 @@ from neftecode_hackathon.api.models import (
     DecisionSummary,
     EpisodeResponse,
     EpisodesResponse,
+    ModelledPresetsResponse,
+    ModelledRunResponse,
+    ModelledRunsResponse,
     SaveDecisionResponse,
     ScenarioResponse,
     SnapshotResponse,
     StoredDecisionResponse,
 )
-from neftecode_hackathon.contracts import Action, ActionOrigin, Decision, ProcessSnapshot
+from neftecode_hackathon.contracts import (
+    Action,
+    ActionOrigin,
+    Decision,
+    ModelledChainRequest,
+    ProcessSnapshot,
+)
 from neftecode_hackathon.data import (
     ReplayCatalogue,
     SnapshotProvider,
     load_replay_catalogue,
 )
+from neftecode_hackathon.modelled import ModelledChainEngine, build_presets
 from neftecode_hackathon.orchestration import Coordinator
 from neftecode_hackathon.persistence import (
     CalculationRepository,
     DecisionRepository,
     EvaluationRepository,
+    ModelledRunRepository,
     ReplayConflictError,
     ReplayRepository,
     SnapshotRepository,
@@ -144,9 +155,13 @@ class ApplicationService:
         self,
         runtime: CalculationRuntime,
         sessions: sessionmaker[Session],
+        modelled_engine: ModelledChainEngine | None = None,
     ) -> None:
         self.runtime = runtime
         self.sessions = sessions
+        self.modelled_engine = modelled_engine or ModelledChainEngine.from_repository(
+            repository_root()
+        )
 
     @classmethod
     def from_environment(
@@ -158,7 +173,12 @@ class ApplicationService:
                 "DATABASE_URL is not configured; start PostgreSQL and apply Alembic migrations."
             )
         engine = create_engine(database_url, pool_pre_ping=True)
-        service = cls(runtime or build_calculation_runtime(root), sessionmaker(engine))
+        resolved_root = (root or repository_root()).resolve()
+        service = cls(
+            runtime or build_calculation_runtime(resolved_root),
+            sessionmaker(engine),
+            ModelledChainEngine.from_repository(resolved_root),
+        )
         service.check_database()
         return service
 
@@ -348,6 +368,27 @@ class ApplicationService:
             current_snapshot_id=current_id or decision.snapshot_id,
             stale=current_id is not None and current_id != decision.snapshot_id,
         )
+
+    def modelled_presets(self) -> ModelledPresetsResponse:
+        return ModelledPresetsResponse(items=build_presets())
+
+    def create_modelled_run(self, payload: ModelledChainRequest) -> ModelledRunResponse:
+        result = self.modelled_engine.run(payload)
+        with self.sessions() as session, session.begin():
+            ModelledRunRepository(session).put(result)
+        return ModelledRunResponse(result=result)
+
+    def modelled_runs(self, *, limit: int) -> ModelledRunsResponse:
+        with self.sessions() as session:
+            items = ModelledRunRepository(session).list(limit=limit)
+        return ModelledRunsResponse(items=items)
+
+    def modelled_run(self, run_id: UUID) -> ModelledRunResponse:
+        with self.sessions() as session:
+            result = ModelledRunRepository(session).get(run_id)
+        if result is None:
+            raise NotFoundError("Modelled run was not found.", {"run_id": str(run_id)})
+        return ModelledRunResponse(result=result)
 
     def _required_snapshot(self, snapshot_id: UUID) -> ProcessSnapshot:
         with self.sessions() as session:

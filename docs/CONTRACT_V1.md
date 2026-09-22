@@ -1,5 +1,13 @@
 # Contract version 1
 
+## Modelled chain extension
+
+The same executable `contracts.py` now owns `ModelledChainRequest`, AVT,
+hydrotreating/blending stage types and `ModelledChainResult`. This is a separate
+180-minute calculation: it is never serialized as a historical `Decision` and never
+mixed with replay. Current transport routes are `GET /modelled-presets`,
+`POST/GET /modelled-runs` and `GET /modelled-runs/{id}`; OpenAPI is authoritative.
+
 This is the integration note for developer 2. The executable source of truth is
 `src/neftecode_hackathon/contracts.py`; do not create parallel DTO definitions in the
 scenario, orchestration, or persistence packages.

@@ -22,6 +22,9 @@ from neftecode_hackathon.api.models import (
     EpisodesResponse,
     ErrorResponse,
     HealthResponse,
+    ModelledPresetsResponse,
+    ModelledRunResponse,
+    ModelledRunsResponse,
     ReplayAdvanceRequest,
     ReplayStartRequest,
     SaveDecisionResponse,
@@ -37,6 +40,7 @@ from neftecode_hackathon.api.service import (
     build_calculation_runtime,
     repository_root,
 )
+from neftecode_hackathon.contracts import ModelledChainRequest
 
 API_PREFIX = "/api/v1"
 
@@ -84,7 +88,7 @@ def create_app(service: ApplicationService | None = None) -> FastAPI:
         title="Neftecode operator adviser API",
         version="1.0.0",
         description=(
-            "Replay-only decision support for hydrotreater 24-2000. "
+            "Decision support for historical replay and explicit modelled full-chain scenarios. "
             "The service recommends and explains; it never controls equipment."
         ),
         lifespan=lifespan,
@@ -235,6 +239,41 @@ def create_app(service: ApplicationService | None = None) -> FastAPI:
         request: Request,
     ) -> StoredDecisionResponse:
         return require_service(request).decision(decision_id)
+
+    @app.get(
+        f"{API_PREFIX}/modelled-presets",
+        response_model=ModelledPresetsResponse,
+        tags=["modelled scenarios"],
+    )
+    def modelled_presets(request: Request) -> ModelledPresetsResponse:
+        return require_service(request).modelled_presets()
+
+    @app.post(
+        f"{API_PREFIX}/modelled-runs",
+        response_model=ModelledRunResponse,
+        tags=["modelled scenarios"],
+    )
+    def create_modelled_run(payload: ModelledChainRequest, request: Request) -> ModelledRunResponse:
+        return require_service(request).create_modelled_run(payload)
+
+    @app.get(
+        f"{API_PREFIX}/modelled-runs",
+        response_model=ModelledRunsResponse,
+        tags=["modelled scenarios"],
+    )
+    def modelled_runs(
+        request: Request,
+        limit: int = Query(default=20, ge=1, le=100),  # noqa: B008
+    ) -> ModelledRunsResponse:
+        return require_service(request).modelled_runs(limit=limit)
+
+    @app.get(
+        f"{API_PREFIX}/modelled-runs/{{run_id}}",
+        response_model=ModelledRunResponse,
+        tags=["modelled scenarios"],
+    )
+    def modelled_run(run_id: UUID, request: Request) -> ModelledRunResponse:
+        return require_service(request).modelled_run(run_id)
 
     return app
 

@@ -1,5 +1,15 @@
 # CLI и HTTP API v1
 
+## Модельные расчёты полной цепочки
+
+- `GET /api/v1/modelled-presets` — пять редактируемых начальных сценариев.
+- `POST /api/v1/modelled-runs` — расчёт и атомарное сохранение input/result/versions.
+- `GET /api/v1/modelled-runs?limit=20` — отдельная история modelled runs.
+- `GET /api/v1/modelled-runs/{id}` — полный неизменяемый результат.
+
+Горизонт modelled request фиксирован в 180 минут. Business statuses возвращаются с
+HTTP 200; malformed input — 422; отсутствующий run — 404. Historical API не изменён.
+
 ## Назначение и границы
 
 Backend предоставляет один расчётный путь для CLI и FastAPI: `SnapshotProvider` →

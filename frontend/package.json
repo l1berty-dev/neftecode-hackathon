@@ -9,6 +9,7 @@
     "check:contracts": "node scripts/check-contracts.mjs",
     "typecheck": "npm run check:contracts && tsc -b",
     "test": "npm run check:contracts && vitest run",
+    "e2e": "node scripts/e2e.mjs",
     "build": "npm run check:contracts && tsc -b && vite build"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "jsdom": "^27.0.0",
     "json-schema-to-typescript": "^15.0.4",
     "openapi-typescript": "^7.9.1",
+    "playwright-core": "^1.55.0",
     "typescript": "~5.9.2",
     "vite": "^7.1.7",
     "vitest": "^3.2.4"

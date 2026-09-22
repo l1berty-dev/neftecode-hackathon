@@ -187,6 +187,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/modelled-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Modelled Presets */
+        get: operations["modelled_presets_api_v1_modelled_presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/modelled-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Modelled Runs */
+        get: operations["modelled_runs_api_v1_modelled_runs_get"];
+        put?: never;
+        /** Create Modelled Run */
+        post: operations["create_modelled_run_api_v1_modelled_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/modelled-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Modelled Run */
+        get: operations["modelled_run_api_v1_modelled_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -236,6 +288,66 @@ export interface components {
          * @enum {string}
          */
         Applicability: "supported" | "unsupported" | "insufficient_data";
+        /** AvtQualityResult */
+        AvtQualityResult: {
+            /** T90 C */
+            t90_c: number | null;
+            /** T50 C */
+            t50_c: number | null;
+            /** T95 C */
+            t95_c: number | null;
+            /** Cloud Point C */
+            cloud_point_c: number | null;
+            /** Cfpp C */
+            cfpp_c: number | null;
+            /**
+             * Reasons
+             * @default []
+             */
+            reasons: string[];
+        };
+        /** BlendComponent */
+        BlendComponent: {
+            /** Component Id */
+            component_id: string;
+            /** Name */
+            name: string;
+            /** Available Tonnes */
+            available_tonnes: number;
+            /** Sulfur Mg Kg */
+            sulfur_mg_kg: number | null;
+            /** T95 C */
+            t95_c: number | null;
+            /** Cetane Number */
+            cetane_number: number | null;
+            /**
+             * Relative Cost
+             * @default 1
+             */
+            relative_cost: number;
+        };
+        /** BlendRecipe */
+        BlendRecipe: {
+            /** Shares */
+            shares: components["schemas"]["BlendShare"][];
+            /** Additive Ppm */
+            additive_ppm: number;
+            quality: components["schemas"]["ModelledProductQuality"];
+            /** Relative Cost Proxy */
+            relative_cost_proxy: number | null;
+            admissibility: components["schemas"]["Admissibility"];
+            /** Checks */
+            checks: components["schemas"]["CheckResult"][];
+            /** Limitations */
+            limitations: string[];
+        };
+        /** BlendShare */
+        BlendShare: {
+            /** Component Id */
+            component_id: string;
+            /** Fraction */
+            fraction: number;
+        };
         /**
          * CheckCategory
          * @enum {string}
@@ -496,6 +608,174 @@ export interface components {
             /** Upper */
             upper?: number | null;
         };
+        /** ModelledActionEvaluation */
+        ModelledActionEvaluation: {
+            /** Label */
+            label: string;
+            origin: components["schemas"]["ActionOrigin"];
+            controls: components["schemas"]["ModelledControls"];
+            quality: components["schemas"]["ModelledProductQuality"];
+            /** Severity Proxy */
+            severity_proxy: number | null;
+            /** Throughput Proxy */
+            throughput_proxy: number | null;
+            /** Energy Cost Proxy */
+            energy_cost_proxy: number | null;
+            /** Checks */
+            checks: components["schemas"]["CheckResult"][];
+            admissibility: components["schemas"]["Admissibility"];
+            /** Reasons */
+            reasons: string[];
+        };
+        /**
+         * ModelledChainRequest
+         * @description A self-contained, editable AVT -> hydrotreating -> blending experiment.
+         */
+        ModelledChainRequest: {
+            /** Preset Id */
+            preset_id?: string | null;
+            /** Avt Inputs */
+            avt_inputs?: {
+                [key: string]: number | null;
+            };
+            feed: components["schemas"]["ModelledFeedQuality"];
+            controls: components["schemas"]["ModelledControls"];
+            operator_controls?: components["schemas"]["ModelledControls"] | null;
+            specification: components["schemas"]["ProductSpecification"];
+            /** Tanks */
+            tanks: components["schemas"]["BlendComponent"][];
+            /**
+             * Additive Ppm
+             * @default 0
+             */
+            additive_ppm: number;
+            /**
+             * Horizon Minutes
+             * @default 180
+             * @constant
+             */
+            horizon_minutes: 180;
+        };
+        /** ModelledChainResult */
+        ModelledChainResult: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            status: components["schemas"]["DecisionStatus"];
+            request: components["schemas"]["ModelledChainRequest"];
+            avt: components["schemas"]["AvtQualityResult"];
+            baseline: components["schemas"]["ModelledActionEvaluation"] | null;
+            preferred: components["schemas"]["ModelledActionEvaluation"] | null;
+            /** Alternatives */
+            alternatives: components["schemas"]["ModelledActionEvaluation"][];
+            blend: components["schemas"]["BlendRecipe"] | null;
+            /** Hard Checks */
+            hard_checks: components["schemas"]["CheckResult"][];
+            /** Recommendation */
+            recommendation: string[];
+            /** Assumptions */
+            assumptions: string[];
+            /** Trace */
+            trace: string[];
+            /** Model Version */
+            model_version: string;
+            /** Constraint Version */
+            constraint_version: string;
+        };
+        /**
+         * ModelledControls
+         * @description Hydrotreating controls in the raw scale of the supplied dataset.
+         */
+        ModelledControls: {
+            /** P8 */
+            p8: number;
+            /** T11 */
+            t11: number;
+            /** F19 */
+            f19: number;
+        };
+        /**
+         * ModelledFeedQuality
+         * @description Editable feed context. Null means that the required fact is unavailable.
+         */
+        ModelledFeedQuality: {
+            /** Straight Run Sulfur Mass Pct */
+            straight_run_sulfur_mass_pct: number | null;
+            /** T95 C */
+            t95_c: number | null;
+            /** Cetane Number */
+            cetane_number: number | null;
+            /**
+             * Age Minutes
+             * @default 0
+             */
+            age_minutes: number | null;
+        };
+        /** ModelledPreset */
+        ModelledPreset: {
+            /** Preset Id */
+            preset_id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            expected_status: components["schemas"]["DecisionStatus"];
+            request: components["schemas"]["ModelledChainRequest"];
+        };
+        /** ModelledPresetsResponse */
+        ModelledPresetsResponse: {
+            /** Items */
+            items: components["schemas"]["ModelledPreset"][];
+        };
+        /** ModelledProductQuality */
+        ModelledProductQuality: {
+            /** Sulfur Mg Kg */
+            sulfur_mg_kg: number | null;
+            /** Sulfur Lower Mg Kg */
+            sulfur_lower_mg_kg: number | null;
+            /** Sulfur Upper Mg Kg */
+            sulfur_upper_mg_kg: number | null;
+            /** T95 C */
+            t95_c: number | null;
+            /** Cetane Number Nominal */
+            cetane_number_nominal: number | null;
+            /** Cetane Number Conservative */
+            cetane_number_conservative: number | null;
+        };
+        /** ModelledRunResponse */
+        ModelledRunResponse: {
+            result: components["schemas"]["ModelledChainResult"];
+        };
+        /** ModelledRunSummary */
+        ModelledRunSummary: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Preset Id */
+            preset_id: string | null;
+            status: components["schemas"]["DecisionStatus"];
+            /** Model Version */
+            model_version: string;
+        };
+        /** ModelledRunsResponse */
+        ModelledRunsResponse: {
+            /** Items */
+            items: components["schemas"]["ModelledRunSummary"][];
+        };
         /** ProcessSnapshot */
         ProcessSnapshot: {
             /**
@@ -530,6 +810,24 @@ export interface components {
             issues: string[];
             /** Completeness */
             completeness: number;
+        };
+        /**
+         * ProductSpecProfile
+         * @enum {string}
+         */
+        ProductSpecProfile: "k5_summer" | "k5_winter" | "custom";
+        /**
+         * ProductSpecification
+         * @description Quality limits used by the explicitly modelled product scenario.
+         */
+        ProductSpecification: {
+            profile: components["schemas"]["ProductSpecProfile"];
+            /** Sulfur Max Mg Kg */
+            sulfur_max_mg_kg: number;
+            /** T95 Max C */
+            t95_max_c: number;
+            /** Cetane Min */
+            cetane_min: number;
         };
         /** QualityAssessment */
         QualityAssessment: {
@@ -1046,6 +1344,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StoredDecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    modelled_presets_api_v1_modelled_presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelledPresetsResponse"];
+                };
+            };
+        };
+    };
+    modelled_runs_api_v1_modelled_runs_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelledRunsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_modelled_run_api_v1_modelled_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelledChainRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelledRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    modelled_run_api_v1_modelled_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelledRunResponse"];
                 };
             };
             /** @description Validation Error */

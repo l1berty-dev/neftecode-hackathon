@@ -218,6 +218,9 @@ tempCodeRunnerFile.py
 # Reproducible derivatives are generated locally from context/ source data.
 data/processed/
 artifacts/
+.artifacts/
+.chart-data-*/
+.demo.env
 
 # Marimo
 marimo/_static/

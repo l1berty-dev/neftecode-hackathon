@@ -90,6 +90,9 @@ def test_openapi_contains_the_shared_http_contract() -> None:
         "/api/v1/decisions/{decision_id}",
         "/api/v1/decisions/{decision_id}/save",
         "/api/v1/scenarios/evaluate",
+        "/api/v1/modelled-presets",
+        "/api/v1/modelled-runs",
+        "/api/v1/modelled-runs/{run_id}",
     }
 
 

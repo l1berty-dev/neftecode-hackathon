@@ -6,6 +6,10 @@ import type {
   DecisionResponse,
   EpisodesResponse,
   HealthResponse,
+  ModelledChainRequest,
+  ModelledPresetsResponse,
+  ModelledRunResponse,
+  ModelledRunsResponse,
   SaveDecisionResponse,
   ScenarioRequest,
   ScenarioResponse,
@@ -118,6 +122,30 @@ export class HttpApi implements Api {
     return this.request<SaveDecisionResponse>(
       `/decisions/${encodeURIComponent(id)}/save`,
       { method: "POST" },
+      signal,
+    );
+  }
+
+  modelledPresets(signal?: AbortSignal) {
+    return this.request<ModelledPresetsResponse>("/modelled-presets", {}, signal);
+  }
+
+  createModelledRun(payload: ModelledChainRequest, signal?: AbortSignal) {
+    return this.request<ModelledRunResponse>(
+      "/modelled-runs",
+      { method: "POST", body: JSON.stringify(payload) },
+      signal,
+    );
+  }
+
+  modelledRuns(signal?: AbortSignal) {
+    return this.request<ModelledRunsResponse>("/modelled-runs?limit=20", {}, signal);
+  }
+
+  modelledRun(id: string, signal?: AbortSignal) {
+    return this.request<ModelledRunResponse>(
+      `/modelled-runs/${encodeURIComponent(id)}`,
+      {},
       signal,
     );
   }

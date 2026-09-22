@@ -8,10 +8,17 @@ from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from neftecode_hackathon.contracts import Decision, ProcessSnapshot, ScenarioEvaluation
+from neftecode_hackathon.contracts import (
+    Decision,
+    ModelledChainResult,
+    ModelledRunSummary,
+    ProcessSnapshot,
+    ScenarioEvaluation,
+)
 from neftecode_hackathon.persistence.models import (
     DecisionRow,
     EvaluationRow,
+    ModelledRunRow,
     ReplayRow,
     SnapshotRow,
 )
@@ -220,6 +227,68 @@ class EvaluationRepository:
             or row.action != action
         ):
             raise ValueError("Evaluation ID already belongs to another immutable calculation")
+
+
+class ModelledRunRepository:
+    """Immutable storage kept separate from historical replay decisions."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def put(self, result: ModelledChainResult) -> None:
+        request_payload = result.request.model_dump(mode="json")
+        result_payload = result.model_dump(mode="json")
+        self.session.execute(
+            insert(ModelledRunRow)
+            .values(
+                id=result.run_id,
+                preset_id=result.request.preset_id,
+                status=result.status.value,
+                model_version=result.model_version,
+                constraint_version=result.constraint_version,
+                request_payload=request_payload,
+                result_payload=result_payload,
+                created_at=result.created_at,
+            )
+            .on_conflict_do_nothing(index_elements=[ModelledRunRow.id])
+        )
+        stored = self.get(result.run_id)
+        if stored is None or stored.model_dump(mode="json") != result_payload:
+            raise ValueError("Modelled run ID already belongs to a different immutable payload")
+
+    def get(self, run_id: UUID) -> ModelledChainResult | None:
+        row = self.session.get(ModelledRunRow, run_id)
+        if row is None:
+            return None
+        result = ModelledChainResult.model_validate(row.result_payload)
+        if (
+            result.run_id != row.id
+            or result.status.value != row.status
+            or result.model_version != row.model_version
+            or result.constraint_version != row.constraint_version
+            or result.request.model_dump(mode="json") != row.request_payload
+        ):
+            raise ValueError("Modelled run structured columns disagree with immutable payload")
+        return result
+
+    def list(self, limit: int = 20) -> tuple[ModelledRunSummary, ...]:
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
+        rows = self.session.scalars(
+            select(ModelledRunRow)
+            .order_by(ModelledRunRow.created_at.desc(), ModelledRunRow.id)
+            .limit(limit)
+        )
+        return tuple(
+            ModelledRunSummary(
+                run_id=row.id,
+                created_at=row.created_at,
+                preset_id=row.preset_id,
+                status=row.status,
+                model_version=row.model_version,
+            )
+            for row in rows
+        )
 
 
 class CalculationRepository:

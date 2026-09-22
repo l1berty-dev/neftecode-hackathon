@@ -12,6 +12,9 @@ from neftecode_hackathon.contracts import (
     Decision,
     DecisionStatus,
     FiniteFloat,
+    ModelledChainResult,
+    ModelledPreset,
+    ModelledRunSummary,
     ProcessSnapshot,
     ScenarioEvaluation,
     SignalId,
@@ -130,3 +133,15 @@ class DecisionListResponse(ApiModel):
 
 class StoredDecisionResponse(DecisionResponse):
     pass
+
+
+class ModelledPresetsResponse(ApiModel):
+    items: tuple[ModelledPreset, ...]
+
+
+class ModelledRunsResponse(ApiModel):
+    items: tuple[ModelledRunSummary, ...]
+
+
+class ModelledRunResponse(ApiModel):
+    result: ModelledChainResult

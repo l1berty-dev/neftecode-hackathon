@@ -9,6 +9,7 @@ import sys
 from datetime import datetime
 
 from neftecode_hackathon.data import prepare_data
+from neftecode_hackathon.modelled import train_modelled_response
 from neftecode_hackathon.quality import train_forecast
 
 
@@ -17,6 +18,9 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("prepare", help="prepare and audit the provided historical data")
     subparsers.add_parser("train", help="train and evaluate the 60-minute continuation forecast")
+    subparsers.add_parser(
+        "modelled-train", help="audit/train the 180-minute sign-constrained response model"
+    )
     evaluate = subparsers.add_parser(
         "evaluate", help="evaluate the shared decision cycle at an ISO replay timestamp"
     )
@@ -66,13 +70,21 @@ def main(argv: list[str] | None = None) -> None:
 
         decision = build_calculation_runtime().decide_at(args.at)
         print(json.dumps(decision.model_dump(mode="json"), ensure_ascii=False, indent=2))
+    elif args.command == "modelled-train":
+        manifest = train_modelled_response(progress=print)
+        print(f"Trained model {manifest['model_version']}")
+        print(
+            f"Selected lag={manifest['selected_lag_minutes']} min; "
+            f"validation MAE={manifest['metrics']['validation_mae']:.6g}; "
+            f"test MAE={manifest['metrics']['test_mae']:.6g}"
+        )
     elif args.command == "serve":
         import uvicorn
 
         port = int(os.environ.get("API_PORT", "8000"))
         uvicorn.run(
             "neftecode_hackathon.api.app:app",
-            host="127.0.0.1",
+            host=os.environ.get("API_HOST", "127.0.0.1"),
             port=port,
             workers=1,
         )

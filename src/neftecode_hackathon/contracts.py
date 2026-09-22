@@ -286,6 +286,165 @@ class Decision(ContractModel):
         return self
 
 
+class ProductSpecProfile(StrEnum):
+    K5_SUMMER = "k5_summer"
+    K5_WINTER = "k5_winter"
+    CUSTOM = "custom"
+
+
+class ProductSpecification(ContractModel):
+    """Quality limits used by the explicitly modelled product scenario."""
+
+    profile: ProductSpecProfile
+    sulfur_max_mg_kg: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    t95_max_c: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    cetane_min: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+
+
+class ModelledFeedQuality(ContractModel):
+    """Editable feed context. Null means that the required fact is unavailable."""
+
+    straight_run_sulfur_mass_pct: NonNegativeFiniteFloat | None
+    t95_c: FiniteFloat | None
+    cetane_number: NonNegativeFiniteFloat | None
+    age_minutes: NonNegativeFiniteFloat | None = 0.0
+
+
+class ModelledControls(ContractModel):
+    """Hydrotreating controls in the raw scale of the supplied dataset."""
+
+    p8: FiniteFloat
+    t11: FiniteFloat
+    f19: FiniteFloat
+
+
+class BlendComponent(ContractModel):
+    component_id: Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9_-]*$")]
+    name: NonEmptyText
+    available_tonnes: Annotated[float, Field(gt=0, allow_inf_nan=False)]
+    sulfur_mg_kg: NonNegativeFiniteFloat | None
+    t95_c: FiniteFloat | None
+    cetane_number: NonNegativeFiniteFloat | None
+    relative_cost: Annotated[float, Field(gt=0, allow_inf_nan=False)] = 1.0
+
+
+class ModelledChainRequest(ContractModel):
+    """A self-contained, editable AVT -> hydrotreating -> blending experiment."""
+
+    preset_id: NonEmptyText | None = None
+    avt_inputs: dict[NonEmptyText, FiniteFloat | None] = Field(default_factory=dict)
+    feed: ModelledFeedQuality
+    controls: ModelledControls
+    operator_controls: ModelledControls | None = None
+    specification: ProductSpecification
+    tanks: tuple[BlendComponent, ...] = Field(min_length=1, max_length=5)
+    additive_ppm: NonNegativeFiniteFloat = 0.0
+    horizon_minutes: Literal[180] = 180
+
+    @model_validator(mode="after")
+    def validate_components(self) -> Self:
+        ids = [item.component_id for item in self.tanks]
+        if len(ids) != len(set(ids)):
+            raise ValueError("tank component_id values must be unique")
+        return self
+
+
+class AvtQualityResult(ContractModel):
+    t90_c: FiniteFloat | None
+    t50_c: FiniteFloat | None
+    t95_c: FiniteFloat | None
+    cloud_point_c: FiniteFloat | None
+    cfpp_c: FiniteFloat | None
+    reasons: tuple[str, ...] = ()
+
+
+class ModelledProductQuality(ContractModel):
+    sulfur_mg_kg: FiniteFloat | None
+    sulfur_lower_mg_kg: FiniteFloat | None
+    sulfur_upper_mg_kg: FiniteFloat | None
+    t95_c: FiniteFloat | None
+    cetane_number_nominal: FiniteFloat | None
+    cetane_number_conservative: FiniteFloat | None
+
+
+class ModelledActionEvaluation(ContractModel):
+    label: NonEmptyText
+    origin: ActionOrigin
+    controls: ModelledControls
+    quality: ModelledProductQuality
+    severity_proxy: FiniteFloat | None
+    throughput_proxy: FiniteFloat | None
+    energy_cost_proxy: FiniteFloat | None
+    checks: tuple[CheckResult, ...]
+    admissibility: Admissibility
+    reasons: tuple[str, ...]
+
+
+class BlendShare(ContractModel):
+    component_id: NonEmptyText
+    fraction: Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
+
+
+class BlendRecipe(ContractModel):
+    shares: tuple[BlendShare, ...]
+    additive_ppm: NonNegativeFiniteFloat
+    quality: ModelledProductQuality
+    relative_cost_proxy: FiniteFloat | None
+    admissibility: Admissibility
+    checks: tuple[CheckResult, ...]
+    limitations: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def validate_balance(self) -> Self:
+        if self.shares and abs(sum(item.fraction for item in self.shares) - 1.0) > 1e-6:
+            raise ValueError("blend shares must sum to one")
+        return self
+
+
+class ModelledChainResult(ContractModel):
+    run_id: UUID
+    created_at: datetime
+    status: DecisionStatus
+    request: ModelledChainRequest
+    avt: AvtQualityResult
+    baseline: ModelledActionEvaluation | None
+    preferred: ModelledActionEvaluation | None
+    alternatives: tuple[ModelledActionEvaluation, ...] = Field(max_length=2)
+    blend: BlendRecipe | None
+    hard_checks: tuple[CheckResult, ...]
+    recommendation: tuple[str, ...]
+    assumptions: tuple[str, ...]
+    trace: tuple[str, ...]
+    model_version: NonEmptyText
+    constraint_version: NonEmptyText
+
+    @model_validator(mode="after")
+    def validate_created_at(self) -> Self:
+        _require_aware(self.created_at, "created_at")
+        return self
+
+
+class ModelledPreset(ContractModel):
+    preset_id: NonEmptyText
+    name: NonEmptyText
+    description: NonEmptyText
+    expected_status: DecisionStatus
+    request: ModelledChainRequest
+
+
+class ModelledRunSummary(ContractModel):
+    run_id: UUID
+    created_at: datetime
+    preset_id: NonEmptyText | None
+    status: DecisionStatus
+    model_version: NonEmptyText
+
+    @model_validator(mode="after")
+    def validate_created_at(self) -> Self:
+        _require_aware(self.created_at, "created_at")
+        return self
+
+
 class ContractExample(ContractModel):
     """Versioned wrapper used only to exchange the common synthetic fixture."""
 

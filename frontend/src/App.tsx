@@ -13,13 +13,30 @@ import { ControlEditor } from "./components/ControlEditor";
 import { EvaluationCard } from "./components/EvaluationCard";
 import { QualityChart } from "./components/QualityChart";
 import { formatAge, formatDate, formatNumber, statusText } from "./format";
+import { ModelledDashboard } from "./components/ModelledDashboard";
 
 interface Props {
   api: Api;
   fixtureMode?: boolean;
+  initialMode?: "modelled" | "replay";
 }
 
-export default function App({ api, fixtureMode = false }: Props) {
+export default function App({ api, fixtureMode = false, initialMode }: Props) {
+  const [mode, setMode] = useState<"modelled" | "replay">(
+    initialMode ?? (fixtureMode ? "replay" : "modelled"),
+  );
+  return (
+    <>
+      <nav className="mode-tabs" aria-label="Режим продукта">
+        <button className={mode === "modelled" ? "active" : ""} onClick={() => setMode("modelled")}>Модельные сценарии</button>
+        <button className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>Исторический replay</button>
+      </nav>
+      {mode === "modelled" ? <ModelledDashboard api={api} /> : <HistoricalApp api={api} fixtureMode={fixtureMode} />}
+    </>
+  );
+}
+
+export function HistoricalApp({ api, fixtureMode = false }: Props) {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [snapshot, setSnapshot] = useState<ProcessSnapshot | null>(null);
   const [controls, setControls] = useState<ControlDescriptor[]>([]);

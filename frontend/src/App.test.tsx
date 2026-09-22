@@ -20,7 +20,7 @@ describe("App", () => {
     const api: Api = new FixtureApi();
     const save = vi.spyOn(api, "saveDecision");
     const user = userEvent.setup();
-    render(<App api={api} fixtureMode />);
+    render(<App api={api} fixtureMode initialMode="replay" />);
 
     expect(screen.getByText(/DEMO FIXTURE/)).toBeInTheDocument();
     const button = await screen.findByRole("button", { name: "Сохранить решение" });
@@ -33,7 +33,7 @@ describe("App", () => {
   it("shows an API failure as an error, not as a technological decision", async () => {
     const api: Api = new FixtureApi();
     vi.spyOn(api, "health").mockRejectedValue(new ApiError("Backend недоступен", 503, "UNAVAILABLE"));
-    render(<App api={api} />);
+    render(<App api={api} initialMode="replay" />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Backend недоступен");
     expect(screen.queryByText("Нет допустимого варианта")).not.toBeInTheDocument();
@@ -48,7 +48,7 @@ describe("App", () => {
       snapshot: sample.snapshot,
       current_snapshot_id: sample.snapshot.snapshot_id,
     });
-    render(<App api={api} />);
+    render(<App api={api} initialMode="replay" />);
 
     await waitFor(() => expect(start).toHaveBeenCalledWith("synthetic-fixture", expect.any(AbortSignal)));
     expect(await screen.findByText("Рекомендуется изменение")).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe("App", () => {
     const loadSnapshot = vi.spyOn(api, "snapshot");
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const user = userEvent.setup();
-    render(<App api={api} />);
+    render(<App api={api} initialMode="replay" />);
 
     const historyItem = await screen.findByRole("button", {
       name: /Открыть исходный снимок/,
@@ -113,7 +113,7 @@ describe("App", () => {
       stale: false,
     });
     const user = userEvent.setup();
-    render(<App api={api} />);
+    render(<App api={api} initialMode="replay" />);
 
     const originalDecision = await screen.findByText("Рекомендуется изменение");
     const input = await screen.findByRole("spinbutton", { name: /Новое значение/ });
@@ -196,7 +196,7 @@ describe("App", () => {
       };
     });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    render(<App api={api} />);
+    render(<App api={api} initialMode="replay" />);
 
     const input = await screen.findByRole("spinbutton", { name: /Новое значение/ });
     await user.clear(input);

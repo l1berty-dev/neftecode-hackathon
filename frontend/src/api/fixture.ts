@@ -131,4 +131,20 @@ export class FixtureApi implements Api {
     this.saved = true;
     return { decision_id: id, saved: true as const };
   }
+
+  async modelledPresets(): Promise<never> {
+    throw new ApiError("Модельные сценарии недоступны в fixture", 503, "FIXTURE_STATIC");
+  }
+
+  async createModelledRun(): Promise<never> {
+    throw new ApiError("Модельные сценарии недоступны в fixture", 503, "FIXTURE_STATIC");
+  }
+
+  async modelledRuns(): Promise<never> {
+    throw new ApiError("Модельные сценарии недоступны в fixture", 503, "FIXTURE_STATIC");
+  }
+
+  async modelledRun(): Promise<never> {
+    throw new ApiError("Модельные сценарии недоступны в fixture", 503, "FIXTURE_STATIC");
+  }
 }

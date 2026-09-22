@@ -59,3 +59,16 @@ class ReplayRow(Base):
     episode_id: Mapped[str] = mapped_column(String(128))
     current_snapshot_id: Mapped[UUID] = mapped_column(ForeignKey("snapshots.id"))
     position: Mapped[int] = mapped_column(Integer)
+
+
+class ModelledRunRow(Base):
+    __tablename__ = "modelled_runs"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    preset_id: Mapped[str | None] = mapped_column(String(128), index=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    model_version: Mapped[str] = mapped_column(String(128))
+    constraint_version: Mapped[str] = mapped_column(String(128))
+    request_payload: Mapped[dict] = mapped_column(JSONB)
+    result_payload: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

@@ -36,6 +36,12 @@ export type ScenarioRequest = Transport["ScenarioRequest"];
 export type ScenarioResponse = Omit<Transport["ScenarioResponse"], "evaluation"> & {
   evaluation: ScenarioEvaluation;
 };
+export type ModelledChainRequest = Transport["ModelledChainRequest"];
+export type ModelledChainResult = Transport["ModelledChainResult"];
+export type ModelledPreset = Transport["ModelledPreset"];
+export type ModelledPresetsResponse = Transport["ModelledPresetsResponse"];
+export type ModelledRunResponse = Transport["ModelledRunResponse"];
+export type ModelledRunsResponse = Transport["ModelledRunsResponse"];
 
 export interface Api {
   health(signal?: AbortSignal): Promise<HealthResponse>;
@@ -50,6 +56,13 @@ export interface Api {
   savedDecisions(signal?: AbortSignal): Promise<DecisionHistoryResponse>;
   decision(id: string, signal?: AbortSignal): Promise<StoredDecisionResponse>;
   saveDecision(id: string, signal?: AbortSignal): Promise<SaveDecisionResponse>;
+  modelledPresets(signal?: AbortSignal): Promise<ModelledPresetsResponse>;
+  createModelledRun(
+    request: ModelledChainRequest,
+    signal?: AbortSignal,
+  ): Promise<ModelledRunResponse>;
+  modelledRuns(signal?: AbortSignal): Promise<ModelledRunsResponse>;
+  modelledRun(id: string, signal?: AbortSignal): Promise<ModelledRunResponse>;
 }
 
 export class ApiError extends Error {
