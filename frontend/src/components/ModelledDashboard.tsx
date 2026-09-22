@@ -4,156 +4,155 @@ import type {
   ModelledChainRequest,
   ModelledChainResult,
   ModelledPreset,
-  ModelledRunsResponse,
 } from "../api/types";
-import { ApiError } from "../api/types";
-import { formatDate, formatNumber, statusText } from "../format";
 
-function copyRequest(request: ModelledChainRequest): ModelledChainRequest {
-  return structuredClone(request);
-}
+type Props = { api: Api };
 
-function errorText(error: unknown) {
-  if (error instanceof ApiError) return `${error.message} (${error.code})`;
-  return error instanceof Error ? error.message : "Неизвестная ошибка";
-}
+const statusText: Record<string, string> = {
+  change_recommended: "Рекомендуется модельное изменение",
+  no_change: "Сохранить настройки",
+  insufficient_data: "Недостаточно данных",
+  no_feasible_option: "Нет допустимого варианта",
+};
 
-export function ModelledDashboard({ api }: { api: Api }) {
+const number = (value: string) => value === "" ? null : Number(value);
+const display = (value: number | null | undefined, digits = 2) => value == null ? "не оценено" : value.toFixed(digits);
+
+export function ModelledDashboard({ api }: Props) {
   const [presets, setPresets] = useState<ModelledPreset[]>([]);
-  const [input, setInput] = useState<ModelledChainRequest | null>(null);
+  const [selected, setSelected] = useState("");
+  const [request, setRequest] = useState<ModelledChainRequest | null>(null);
   const [result, setResult] = useState<ModelledChainResult | null>(null);
-  const [history, setHistory] = useState<ModelledRunsResponse["items"]>([]);
-  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<{ run_id: string; status: string; preset_id: string | null }[]>([]);
+  const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [edited, setEdited] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    void Promise.all([api.modelledPresets(controller.signal), api.modelledRuns(controller.signal)])
-      .then(([presetResponse, historyResponse]) => {
-        const first = presetResponse.items[0] ?? null;
+    Promise.all([api.modelledPresets(controller.signal), api.modelledRuns(controller.signal)])
+      .then(([presetResponse, runResponse]) => {
         setPresets(presetResponse.items);
-        setInput(first ? copyRequest(first.request) : null);
-        setHistory(historyResponse.items);
+        setHistory(runResponse.items);
+        if (presetResponse.items[0]) {
+          setSelected(presetResponse.items[0].preset_id);
+          setRequest(structuredClone(presetResponse.items[0].request));
+          setEdited(false);
+        }
       })
-      .catch((caught) => setError(errorText(caught)))
-      .finally(() => setLoading(false));
+      .catch((reason: Error) => setError(reason.message))
+      .finally(() => setBusy(false));
     return () => controller.abort();
   }, [api]);
 
-  const selectedPreset = useMemo(
-    () => presets.find((preset) => preset.preset_id === input?.preset_id),
-    [input?.preset_id, presets],
-  );
-
+  const preset = useMemo(() => presets.find((item) => item.preset_id === selected), [presets, selected]);
   const choosePreset = (id: string) => {
-    const preset = presets.find((item) => item.preset_id === id);
-    if (!preset) return;
-    setInput(copyRequest(preset.request));
+    const next = presets.find((item) => item.preset_id === id);
+    setSelected(id);
+    setRequest(next ? structuredClone(next.request) : null);
     setResult(null);
+    setEdited(false);
     setError(null);
   };
-
-  const patchFeed = (field: keyof ModelledChainRequest["feed"], value: number | null) => {
-    setInput((current) => current && { ...current, feed: { ...current.feed, [field]: value } });
+  const patch = (fn: (draft: ModelledChainRequest) => void) => {
+    if (!request) return;
+    const draft = structuredClone(request);
+    fn(draft);
+    setRequest(draft);
+    setResult(null);
+    setEdited(true);
+    setError(null);
   };
-
-  const patchControl = (field: "p8" | "t11" | "f19", value: number, operator = false) => {
-    if (!Number.isFinite(value)) return;
-    setInput((current) => {
-      if (!current) return current;
-      if (operator) {
-        return {
-          ...current,
-          operator_controls: { ...(current.operator_controls ?? current.controls), [field]: value },
-        };
-      }
-      return { ...current, controls: { ...current.controls, [field]: value } };
-    });
-  };
-
   const run = async () => {
-    if (!input) return;
-    setLoading(true);
+    if (!request) return;
+    setBusy(true);
     setError(null);
     try {
-      const response = await api.createModelledRun(input);
+      const response = await api.createModelledRun(request);
       setResult(response.result);
-      setHistory((items) => [
-        {
-          run_id: response.result.run_id,
-          created_at: response.result.created_at,
-          preset_id: response.result.request.preset_id ?? null,
-          status: response.result.status,
-          model_version: response.result.model_version,
-        },
-        ...items.filter((item) => item.run_id !== response.result.run_id),
-      ]);
-    } catch (caught) {
-      setError(errorText(caught));
+      setEdited(false);
+      const updated = await api.modelledRuns();
+      setHistory(updated.items);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Не удалось выполнить расчёт");
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
-  const openRun = async (id: string) => {
-    setLoading(true);
-    try {
-      const response = await api.modelledRun(id);
-      setInput(copyRequest(response.result.request));
-      setResult(response.result);
-    } catch (caught) {
-      setError(errorText(caught));
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (busy && !request) return <main className="boot-state"><p>Загрузка модельного контура…</p></main>;
 
-  if (!input && loading) return <main className="shell boot-state">Загружаем модельные сценарии…</main>;
-  if (!input) return <main className="shell"><div className="error-notice" role="alert">{error ?? "Нет пресетов"}</div></main>;
+  return <>
+    <header className="topbar modelled-topbar">
+      <div><p className="eyebrow">Явно модельный what-if · горизонт 180 минут</p><h1>АВТ → гидроочистка → блендинг</h1></div>
+      <div className="model-badge"><span className="live-dot"/><div><strong>Советчик, не управление</strong><small>Сырые шкалы P8 / T11 / F19</small></div></div>
+    </header>
+    <main className="shell">
+      {error && <div className="error-notice" role="alert">{error}</div>}
+      <section className="panel preset-panel">
+        <div><p className="eyebrow">Начальный сценарий</p><h2>{preset?.name ?? "Сценарий"}</h2><p className="muted">{preset?.description}</p></div>
+        <label>Пресет<select aria-label="Пресет" value={selected} onChange={(event) => choosePreset(event.target.value)}>{presets.map((item) => <option key={item.preset_id} value={item.preset_id}>{item.name}</option>)}</select></label>
+        <button className="primary-button" disabled={busy || !request} onClick={run}>{busy ? "Расчёт…" : "Рассчитать цепочку"}</button>
+      </section>
 
-  return (
-    <>
-      <header className="topbar modelled-topbar">
-        <div><p className="eyebrow">Neftecode Advisor · modelled what-if</p><h1>АВТ → гидроочистка → блендинг</h1></div>
-        <div className="model-badge"><span className="live-dot" /><div><strong>Экспериментальный режим</strong><small>горизонт 180 мин · шаг совета 60 мин</small></div></div>
-      </header>
-      <main className="shell modelled-shell">
-        {error && <div className="error-notice" role="alert"><strong>Расчёт не выполнен</strong><span>{error}</span></div>}
-        <section className="panel preset-panel">
-          <div><p className="eyebrow">Начните со сценария</p><h2>{selectedPreset?.name ?? "Редактируемый сценарий"}</h2><p className="muted">{selectedPreset?.description}</p></div>
-          <label>Пресет<select value={input.preset_id ?? ""} onChange={(event) => choosePreset(event.target.value)}>{presets.map((preset) => <option key={preset.preset_id} value={preset.preset_id}>{preset.name}</option>)}</select></label>
-          <button className="primary-button" onClick={() => void run()} disabled={loading}>{loading ? "Считаем…" : "Рассчитать цепочку"}</button>
-        </section>
+      {request && <section className="model-input-grid">
+        <article className="panel input-card"><p className="step-number">01</p><h2>Сырьё</h2>
+          <Field label="Сера прямогонного ДТ, % масс." value={request.feed.straight_run_sulfur_mass_pct} onChange={(v) => patch((d) => { d.feed.straight_run_sulfur_mass_pct = v; })}/>
+          <Field label="T95, °C" value={request.feed.t95_c} onChange={(v) => patch((d) => { d.feed.t95_c = v; })}/>
+          <Field label="Цетановое число" value={request.feed.cetane_number} onChange={(v) => patch((d) => { d.feed.cetane_number = v; })}/>
+          <Field label="Возраст данных, мин" value={request.feed.age_minutes} onChange={(v) => patch((d) => { d.feed.age_minutes = v; })}/>
+        </article>
+        <article className="panel input-card"><p className="step-number">02</p><h2>Режим 24-2000</h2>
+          <Field label="P8, сырая шкала" value={request.controls.p8} onChange={(v) => patch((d) => { if (v != null) d.controls.p8 = v; })}/>
+          <Field label="T11, сырая шкала" value={request.controls.t11} onChange={(v) => patch((d) => { if (v != null) d.controls.t11 = v; })}/>
+          <Field label="F19, сырая шкала" value={request.controls.f19} onChange={(v) => patch((d) => { if (v != null) d.controls.f19 = v; })}/>
+          <p className="warning-copy">Эффекты управлений экспериментальные: историческая модель не доказала причинный отклик.</p>
+        </article>
+        <article className="panel input-card"><p className="step-number">03</p><h2>Спецификация</h2>
+          <Field label="Сера, не более мг/кг" value={request.specification.sulfur_max_mg_kg} onChange={(v) => patch((d) => { if (v != null) d.specification.sulfur_max_mg_kg = v; })}/>
+          <Field label="T95, не более °C" value={request.specification.t95_max_c} onChange={(v) => patch((d) => { if (v != null) d.specification.t95_max_c = v; })}/>
+          <Field label="Цетановое число, не менее" value={request.specification.cetane_min} onChange={(v) => patch((d) => { if (v != null) d.specification.cetane_min = v; })}/>
+          <Field label="Присадка 2-EHN, ppm" value={request.additive_ppm} onChange={(v) => patch((d) => { if (v != null) d.additive_ppm = v; })}/>
+        </article>
+        <article className="panel input-card tanks-card"><p className="step-number">04</p><h2>Компоненты смеси</h2>
+          {request.tanks.map((tank, index) => <div className="tank-row" key={tank.component_id}><strong>{tank.name}</strong>
+            <Field label="Сера, мг/кг" value={tank.sulfur_mg_kg} onChange={(v) => patch((d) => { d.tanks[index].sulfur_mg_kg = v; })}/>
+            <Field label="T95, °C" value={tank.t95_c} onChange={(v) => patch((d) => { d.tanks[index].t95_c = v; })}/>
+            <Field label="Цетановое" value={tank.cetane_number} onChange={(v) => patch((d) => { d.tanks[index].cetane_number = v; })}/>
+            <Field label="Отн. стоимость" value={tank.relative_cost} onChange={(v) => patch((d) => { if (v != null) d.tanks[index].relative_cost = v; })}/>
+          </div>)}
+        </article>
+      </section>}
 
-        <section className="model-input-grid" aria-label="Входы модельного сценария">
-          <article className="panel input-card"><p className="step-number">01</p><h2>Сырьё АВТ</h2><NumberField label="Сера прямогонного ДТ, % масс." value={input.feed.straight_run_sulfur_mass_pct} onChange={(value) => patchFeed("straight_run_sulfur_mass_pct", value)} /><NumberField label="T95, °C" value={input.feed.t95_c} onChange={(value) => patchFeed("t95_c", value)} /><NumberField label="Цетановое число" value={input.feed.cetane_number} onChange={(value) => patchFeed("cetane_number", value)} /><NumberField label="Возраст анализа, мин" value={input.feed.age_minutes} onChange={(value) => patchFeed("age_minutes", value)} /><details><summary>Входы формул ВАК ({Object.keys(input.avt_inputs ?? {}).length})</summary><div className="compact-fields">{Object.entries(input.avt_inputs ?? {}).map(([key, value]) => <NumberField key={key} label={key} value={value} onChange={(next) => setInput((current) => current && ({ ...current, avt_inputs: { ...(current.avt_inputs ?? {}), [key]: next } }))} />)}</div></details></article>
-          <article className="panel input-card"><p className="step-number">02</p><h2>Гидроочистка</h2><p className="muted">Исходная шкала датасета; единицы не подтверждены.</p>{(["p8", "t11", "f19"] as const).map((field) => <NumberField key={field} label={field.toUpperCase()} value={input.controls[field]} onChange={(value) => value !== null && patchControl(field, value)} />)}{input.operator_controls && <><h3>Вариант оператора</h3>{(["p8", "t11", "f19"] as const).map((field) => <NumberField key={field} label={field.toUpperCase()} value={input.operator_controls?.[field] ?? null} onChange={(value) => value !== null && patchControl(field, value, true)} />)}</>}</article>
-          <article className="panel input-card"><p className="step-number">03</p><h2>Спецификация</h2><label className="field"><span>Профиль</span><select value={input.specification.profile} onChange={(event) => setInput((current) => current && ({ ...current, specification: { ...current.specification, profile: event.target.value as typeof current.specification.profile, cetane_min: event.target.value === "k5_winter" ? 47 : current.specification.cetane_min } }))}><option value="k5_summer">K5 летнее</option><option value="k5_winter">K5 зимнее</option><option value="custom">Custom</option></select></label><NumberField label="Сера ≤, мг/кг" value={input.specification.sulfur_max_mg_kg} onChange={(value) => value !== null && setInput((current) => current && ({ ...current, specification: { ...current.specification, sulfur_max_mg_kg: value } }))} /><NumberField label="T95 ≤, °C" value={input.specification.t95_max_c} onChange={(value) => value !== null && setInput((current) => current && ({ ...current, specification: { ...current.specification, t95_max_c: value } }))} /><NumberField label="Цетановое число ≥" value={input.specification.cetane_min} onChange={(value) => value !== null && setInput((current) => current && ({ ...current, specification: { ...current.specification, cetane_min: value } }))} /></article>
-          <article className="panel input-card tanks-card"><p className="step-number">04</p><h2>Резервуары и 2-EHN</h2>{input.tanks.map((tank, index) => <div className="tank-row" key={tank.component_id}><strong>{tank.name}</strong>{(["sulfur_mg_kg", "t95_c", "cetane_number", "relative_cost"] as const).map((field) => <NumberField key={field} label={field.replaceAll("_", " ")} value={tank[field]} onChange={(value) => setInput((current) => { if (!current) return current; const tanks = current.tanks.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item); return { ...current, tanks }; })} />)}</div>)}<NumberField label="2-EHN, ppm" value={input.additive_ppm} onChange={(value) => value !== null && setInput((current) => current && ({ ...current, additive_ppm: value }))} /><p className="muted">Поддержка 200–3000 ppm; стоимость присадки = 100× ДТ.</p></article>
-        </section>
+      {request && edited && <section className="modelled-recalculate" role="status">
+        <div><strong>Параметры изменены</strong><span>Предыдущий результат скрыт. Запустите цепочку, чтобы оценить именно текущие значения.</span></div>
+        <button className="primary-button" disabled={busy} onClick={run}>{busy ? "Расчёт…" : "Рассчитать изменённую цепочку"}</button>
+      </section>}
 
-        {result && <ModelledResult result={result} />}
+      {result && <section className="result-stack" aria-live="polite">
+        <article className={`panel result-hero ${result.status}`}><p className="eyebrow">Результат модельного расчёта</p><h2>{statusText[result.status]}</h2><ul>{result.recommendation.map((item, i) => <li key={`${i}-${item}`}>{item}</li>)}</ul>
+          {result.preferred && <div className="proxy-row"><span>Вариант: {result.preferred.label}</span><span>Сера: {display(result.preferred.quality.sulfur_mg_kg)} мг/кг</span><span>Энергия: {display(result.preferred.energy_cost_proxy)}</span></div>}
+        </article>
+        <div className="chain-flow"><Stage number="01" title="АВТ" text={`CFPP: ${display(result.avt.cfpp_c)} °C`}/><Stage number="02" title="Гидроочистка" text={result.preferred ? `${result.preferred.label}, сера ${display(result.preferred.quality.sulfur_mg_kg)} мг/кг` : "не оценено"}/><Stage number="03" title="Рецепт" text={result.blend ? result.blend.shares.filter((s) => s.fraction > 0).map((s) => `${s.component_id} ${Math.round(s.fraction*100)}%`).join(" · ") : "не найден"}/><Stage number="04" title="Присадка" text={`${result.request.additive_ppm} ppm`}/><Stage number="05" title="Продукт" text={result.blend ? `S ${display(result.blend.quality.sulfur_mg_kg)} · T95 ${display(result.blend.quality.t95_c)} · CN ${display(result.blend.quality.cetane_number_conservative)}` : "не оценено"}/></div>
+        <details className="panel technical-details"><summary>Допущения, проверки и trace</summary><h3>Ограничения модели</h3><ul>{result.assumptions.map((item, i) => <li key={`${i}-${item}`}>{item}</li>)}</ul><h3>Обязательные проверки</h3><ul>{result.hard_checks.map((item) => <li key={item.code}>{item.passed ? "✓" : item.passed === false ? "✕" : "?"} {item.message} ({item.code})</li>)}</ul><h3>Trace</h3><ol>{result.trace.map((item, i) => <li key={`${i}-${item}`}>{item}</li>)}</ol></details>
+      </section>}
 
-        <section className="panel history-panel"><div className="section-heading"><div><p className="eyebrow">PostgreSQL · отдельный журнал</p><h2>История модельных расчётов</h2></div></div>{history.length === 0 ? <p className="empty-state">Расчётов пока нет.</p> : <div className="history-list">{history.map((item) => <button key={item.run_id} onClick={() => void openRun(item.run_id)}><span>{formatDate(item.created_at)}</span><strong>{statusText[item.status]}</strong><small>{item.preset_id ?? "custom"} · {item.run_id.slice(0, 8)}</small></button>)}</div>}</section>
-      </main>
-      <footer>Модельный what-if не является промышленной уставкой и не управляет оборудованием.</footer>
-    </>
-  );
+      <section className="panel history-panel"><div className="section-heading"><div><p className="eyebrow">PostgreSQL</p><h2>История модельных запусков</h2></div></div>{history.length ? <div className="history-list">{history.map((item) => <button key={item.run_id} onClick={() => api.modelledRun(item.run_id).then((response) => {
+        setResult(response.result);
+        setRequest(structuredClone(response.result.request));
+        if (response.result.request.preset_id) setSelected(response.result.request.preset_id);
+        setEdited(false);
+        setError(null);
+      }).catch((reason: Error) => setError(reason.message))}><strong>{statusText[item.status]}</strong><span>{item.preset_id ?? "без пресета"}</span><small>{item.run_id.slice(0, 8)}</small></button>)}</div> : <p className="empty-state">Запусков пока нет.</p>}</section>
+    </main>
+    <footer>MODELLED WHAT-IF · результат требует инженерной верификации перед любым применением</footer>
+  </>;
 }
 
-function NumberField({ label, value, onChange }: { label: string; value: number | null | undefined; onChange: (value: number | null) => void }) {
-  return <label className="field"><span>{label}</span><input aria-label={label} type="number" step="any" value={value ?? ""} onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))} /></label>;
+function Field({ label, value, onChange }: { label: string; value: number | null | undefined; onChange: (value: number | null) => void }) {
+  return <label className="field">{label}<input aria-label={label} type="number" step="any" value={value ?? ""} onChange={(event) => onChange(number(event.target.value))}/></label>;
 }
 
-function ModelledResult({ result }: { result: ModelledChainResult }) {
-  const action = result.preferred ?? result.baseline;
-  const recipe = result.blend;
-  const stages = [
-    { title: "Причина", value: `Сера сырья ${formatNumber(result.request.feed.straight_run_sulfur_mass_pct)}% · VAK T95 ${formatNumber(result.avt.t95_c)}°C` },
-    { title: "Действие", value: action ? `P8 ${formatNumber(action.controls.p8)} · T11 ${formatNumber(action.controls.t11)} · F19 ${formatNumber(action.controls.f19)}` : "Не оценивается" },
-    { title: "Прогноз качества", value: action ? `S ${formatNumber(action.quality.sulfur_mg_kg)} мг/кг · T95 ${formatNumber(action.quality.t95_c)}°C · ЦЧ ${formatNumber(action.quality.cetane_number_conservative)}` : "Нет прогноза" },
-    { title: "Рецепт", value: recipe?.shares.length ? recipe.shares.map((share) => `${share.component_id} ${Math.round(share.fraction * 100)}%`).join(" · ") + ` · 2-EHN ${recipe.additive_ppm} ppm` : "Рецепт не найден" },
-    { title: "Ограничения", value: result.hard_checks.length ? `${result.hard_checks.filter((check) => check.passed === true).length}/${result.hard_checks.length} обязательных проверок пройдено` : "Обязательные проверки неизвестны" },
-  ];
-  return <section className="result-stack"><article className={`panel result-hero ${result.status}`}><p className="eyebrow">Результат modelled run</p><h2>{statusText[result.status]}</h2><ul>{result.recommendation.map((item) => <li key={item}>{item}</li>)}</ul><div className="proxy-row"><span>severity proxy <strong>{formatNumber(action?.severity_proxy)}</strong></span><span>throughput proxy <strong>{formatNumber(action?.throughput_proxy)}</strong></span><span>energy cost proxy <strong>{formatNumber(action?.energy_cost_proxy)}</strong></span></div></article><div className="chain-flow">{stages.map((stage, index) => <article className="chain-stage" key={stage.title}><span>{String(index + 1).padStart(2, "0")}</span><h3>{stage.title}</h3><p>{stage.value}</p></article>)}</div><section className="panel comparison-panel"><div className="section-heading"><div><p className="eyebrow">Одинаковая модель · одинаковые ограничения</p><h2>Системный и операторский варианты</h2></div></div><div className="model-comparison">{[result.baseline, result.preferred, ...result.alternatives].filter((item, index, values) => item && values.findIndex((candidate) => candidate?.label === item.label && candidate?.origin === item.origin) === index).map((item) => item && <article key={`${item.origin}-${item.label}`}><span className={`admissibility ${item.admissibility}`}>{item.origin}</span><h3>{item.label}</h3><strong>{formatNumber(item.quality.sulfur_mg_kg)} мг/кг S</strong><small>P8 {formatNumber(item.controls.p8)} · T11 {formatNumber(item.controls.t11)} · F19 {formatNumber(item.controls.f19)}</small></article>)}</div></section><details className="panel technical-details"><summary>Допущения, версии и технический trace</summary><div className="detail-columns"><div><h3>Допущения</h3><ul>{result.assumptions.map((item) => <li key={item}>{item}</li>)}</ul></div><div><h3>Trace</h3><ol>{result.trace.map((item) => <li key={item}>{item}</li>)}</ol></div><div><h3>Версии</h3><p>{result.model_version}</p><p>{result.constraint_version}</p></div></div></details></section>;
+function Stage({ number, title, text }: { number: string; title: string; text: string }) {
+  return <article className="chain-stage"><span>{number}</span><h3>{title}</h3><p>{text}</p></article>;
 }

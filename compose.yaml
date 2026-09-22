@@ -15,5 +15,48 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+  bootstrap:
+    build: .
+    environment:
+      DATA_DIR: /app/data/processed
+      MODEL_DIR: /app/artifacts
+    command: ["sh", "-c", "neftecode-hackathon prepare && neftecode-hackathon train && neftecode-hackathon modelled-train"]
+    volumes:
+      - ./context:/app/context:ro
+      - processed_data:/app/data/processed
+      - model_artifacts:/app/artifacts
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-neftecode}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-neftecode}
+      DATA_DIR: /app/data/processed
+      MODEL_DIR: /app/artifacts
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    command: ["sh", "-c", "alembic upgrade head && neftecode-hackathon serve"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    volumes:
+      - processed_data:/app/data/processed:ro
+      - model_artifacts:/app/artifacts:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
 volumes:
   postgres_data:
+  processed_data:
+  model_artifacts:

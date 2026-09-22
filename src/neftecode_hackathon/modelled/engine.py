@@ -119,14 +119,47 @@ class ModelledChainEngine:
     ) -> ModelledActionEvaluation:
         support_checks = self._support_checks(controls)
         feed = request.feed
-        missing = (
-            feed.straight_run_sulfur_mass_pct is None
-            or feed.t95_c is None
-            or feed.cetane_number is None
-            or feed.age_minutes is None
-            or feed.age_minutes > float(self.config["max_feed_age_minutes"])
+        data_checks = (
+            CheckResult(
+                code="feed_sulfur_available",
+                passed=True if feed.straight_run_sulfur_mass_pct is not None else None,
+                category=CheckCategory.DATA,
+                message="Доступна сера прямогонного дизельного топлива.",
+                actual=feed.straight_run_sulfur_mass_pct,
+                unit="mass %",
+            ),
+            CheckResult(
+                code="feed_t95_available",
+                passed=True if feed.t95_c is not None else None,
+                category=CheckCategory.DATA,
+                message="Доступен T95 сырья.",
+                actual=feed.t95_c,
+                unit="°C",
+            ),
+            CheckResult(
+                code="feed_cetane_available",
+                passed=True if feed.cetane_number is not None else None,
+                category=CheckCategory.DATA,
+                message="Доступно цетановое число сырья.",
+                actual=feed.cetane_number,
+                unit="index",
+            ),
+            CheckResult(
+                code="feed_freshness",
+                passed=(
+                    None
+                    if feed.age_minutes is None
+                    else feed.age_minutes <= float(self.config["max_feed_age_minutes"])
+                ),
+                category=CheckCategory.DATA,
+                message="Возраст входного анализа не превышает модельный предел свежести.",
+                actual=feed.age_minutes,
+                limit=float(self.config["max_feed_age_minutes"]),
+                unit="min",
+            ),
         )
-        if missing or any(check.passed is not True for check in support_checks):
+        checks = (*support_checks, *data_checks)
+        if any(check.passed is not True for check in checks):
             return ModelledActionEvaluation(
                 label=label,
                 origin=origin,
@@ -142,7 +175,7 @@ class ModelledChainEngine:
                 severity_proxy=None,
                 throughput_proxy=None,
                 energy_cost_proxy=None,
-                checks=support_checks,
+                checks=checks,
                 admissibility=Admissibility.NOT_ASSESSABLE,
                 reasons=(
                     "Недостаточно свежих данных или действие вне совместной области поддержки.",
@@ -207,7 +240,7 @@ class ModelledChainEngine:
             severity_proxy=severity,
             throughput_proxy=throughput,
             energy_cost_proxy=energy,
-            checks=(*support_checks, sulfur_check),
+            checks=(*checks, sulfur_check),
             admissibility=Admissibility.ADMISSIBLE,
             reasons=(
                 "Эффект рассчитан sign-constrained response model на горизонте 180 минут.",
@@ -363,7 +396,14 @@ class ModelledChainEngine:
         _, preferred, blend = selected
         same_controls = preferred.controls == baseline.controls
         status = DecisionStatus.NO_CHANGE if same_controls else DecisionStatus.CHANGE_RECOMMENDED
-        alternatives = tuple(item[1] for item in feasible if item[1] is not preferred)[:2]
+        alternative_items = [item[1] for item in feasible if item[1] is not preferred]
+        operator_items = [
+            item for item in alternative_items if item.origin is ActionOrigin.OPERATOR
+        ]
+        alternatives = tuple(
+            operator_items
+            + [item for item in alternative_items if item.origin is not ActionOrigin.OPERATOR]
+        )[:2]
         if status is DecisionStatus.NO_CHANGE:
             recommendation = (
                 "Сохранить текущие модельные параметры: значимого выигрыша не найдено.",

@@ -132,24 +132,42 @@ def optimise_blend(
             candidates.append((component_cost + additive_cost, shares, quality, checks))
 
     if not candidates:
+        equal_share = 1.0 / len(components)
+        diagnostic_pairs = tuple((equal_share, component) for component in components)
+        sulfur = sum(share * float(component.sulfur_mg_kg) for share, component in diagnostic_pairs)
+        t95 = sum(share * float(component.t95_c) for share, component in diagnostic_pairs)
+        base_cetane = sum(
+            share * float(component.cetane_number) for share, component in diagnostic_pairs
+        )
+        nominal = base_cetane + additive_ppm / 1000 * nominal_cetane_per_1000
+        conservative = base_cetane + additive_ppm / 1000 * conservative_cetane_per_1000
+        diagnostic_quality = ModelledProductQuality(
+            sulfur_mg_kg=sulfur,
+            sulfur_lower_mg_kg=None,
+            sulfur_upper_mg_kg=None,
+            t95_c=t95,
+            cetane_number_nominal=nominal,
+            cetane_number_conservative=conservative,
+        )
+        diagnostic_checks = (
+            _check("product_sulfur", sulfur, specification.sulfur_max_mg_kg, False, "mg/kg"),
+            _check("product_t95", t95, specification.t95_max_c, False, "°C"),
+            _check("product_cetane", conservative, specification.cetane_min, True, "index"),
+        )
         return BlendRecipe(
             shares=tuple(
-                BlendShare(component_id=component.component_id, fraction=1.0 / len(components))
+                BlendShare(component_id=component.component_id, fraction=equal_share)
                 for component in components
             ),
             additive_ppm=additive_ppm,
-            quality=ModelledProductQuality(
-                sulfur_mg_kg=None,
-                sulfur_lower_mg_kg=None,
-                sulfur_upper_mg_kg=None,
-                t95_c=None,
-                cetane_number_nominal=None,
-                cetane_number_conservative=None,
-            ),
+            quality=diagnostic_quality,
             relative_cost_proxy=None,
             admissibility=Admissibility.REJECTED,
-            checks=(),
-            limitations=(*limitations, "В сетке 5% не найден допустимый рецепт."),
+            checks=diagnostic_checks,
+            limitations=(
+                *limitations,
+                "В сетке 5% не найден допустимый рецепт; проверки показаны для равной смеси.",
+            ),
         )
 
     cost, shares, quality, checks = min(candidates, key=lambda item: item[0])

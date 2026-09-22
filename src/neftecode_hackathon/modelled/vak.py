@@ -100,3 +100,27 @@ def calculate_avt_cfpp(inputs: Mapping[str, float | None]) -> tuple[float | None
     return 31.40363 - 0.06784 * t33 + 17.411 * p67 - 8.11544 * p4 - 0.47309 * (
         f65 / f32 + f30
     ), None
+
+
+def evaluate_avt_vak(inputs: Mapping[str, float | None]) -> AvtQualityResult:
+    """Compatibility entry point for the AVT-only corrected CFPP expression."""
+
+    cfpp, reason = calculate_avt_cfpp(inputs)
+    return AvtQualityResult(
+        t90_c=None,
+        t50_c=None,
+        t95_c=None,
+        cloud_point_c=None,
+        cfpp_c=cfpp,
+        reasons=(() if reason is None else (reason,)),
+    )
+
+
+def evaluate_hydrotreating_vak(inputs: Mapping[str, float | None]) -> AvtQualityResult:
+    """Compatibility entry point using the organizer's original LIMS tag spelling."""
+
+    normalized = dict(inputs)
+    original_name = "LIMS:24-2000.Pipeline.95%.T"
+    if "LIMS_T95" not in normalized and original_name in normalized:
+        normalized["LIMS_T95"] = normalized[original_name]
+    return calculate_vak(normalized)

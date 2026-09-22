@@ -45,7 +45,7 @@ def database():
     previous = os.environ.get("DATABASE_URL")
     try:
         subprocess.run(
-            [*compose, "up", "-d", "--wait", "--wait-timeout", "60"],
+            [*compose, "up", "-d", "--wait", "--wait-timeout", "60", "postgres"],
             env=env,
             check=True,
             capture_output=True,

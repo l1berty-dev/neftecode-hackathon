@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -171,6 +172,12 @@ def train_modelled_response(
         "selected_alpha": alpha,
         "validation_q90_mg_kg": q90,
         "coefficients_standardised": dict(zip(feature_names, model.coef_.tolist(), strict=True)),
+        "coefficients": {
+            "p8": float(model.coef_[1]),
+            "t11": float(model.coef_[2]),
+            "f19": float(model.coef_[3]),
+        },
+        "causal_claim": False,
         "intercept": float(model.intercept_),
         "control_ranges_train": ranges,
         "split": {
@@ -192,9 +199,12 @@ def train_modelled_response(
     payload["model_version"] = (
         "modelled-response-v1:" + hashlib.sha256(canonical.encode()).hexdigest()[:16]
     )
-    artifacts.mkdir(parents=True, exist_ok=True)
-    output = artifacts / "modelled_manifest.json"
+    output_directory = Path(os.environ.get("MODEL_DIR", artifacts))
+    if not output_directory.is_absolute():
+        output_directory = repository / output_directory
+    output_directory.mkdir(parents=True, exist_ok=True)
+    output = output_directory / "modelled_manifest.json"
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if progress:
-        progress(f"Wrote {output.relative_to(repository)}")
+        progress(f"Wrote {output}")
     return payload

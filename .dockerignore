@@ -1,7 +1,9 @@
 .git
 .venv
+.uv-cache
 .ruff_cache
 .pytest_cache
+__pycache__
 artifacts
 data/processed
 frontend/node_modules
@@ -9,3 +11,4 @@ frontend/dist
 context
 docs/presentation/rendered
 .demo.env
+.env
