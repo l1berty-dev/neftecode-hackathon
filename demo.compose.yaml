@@ -1,0 +1,70 @@
+name: neftecode-advisor-demo
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    DATABASE_URL: postgresql+psycopg://neftecode:${POSTGRES_PASSWORD}@postgres:5432/neftecode
+    DATA_DIR: /app/data/processed
+    MODEL_DIR: /app/artifacts
+  volumes:
+    - ./context:/app/context:ro
+    - processed_data:/app/data/processed
+    - model_artifacts:/app/artifacts
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: neftecode
+      POSTGRES_DB: neftecode
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_demo:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neftecode -d neftecode"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  bootstrap:
+    <<: *backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        neftecode-hackathon prepare
+        neftecode-hackathon train
+        neftecode-hackathon modelled-train
+        alembic upgrade head
+    restart: "no"
+
+  api:
+    <<: *backend
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      interval: 5s
+      timeout: 4s
+      retries: 24
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  postgres_demo:
+  processed_data:
+  model_artifacts:

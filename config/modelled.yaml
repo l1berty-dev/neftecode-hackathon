@@ -1,0 +1,28 @@
+version: modelled-hybrid-v1
+constraint_version: modelled-constraints-v1
+horizon_minutes: 180
+recommendation_step_minutes: 60
+max_feed_age_minutes: 240
+controls:
+  p8: {p05: 0.116796, median: 0.181302, p95: 0.210010, favorable: high}
+  t11: {p05: 348.371910, median: 363.832687, p95: 375.830841, favorable: low}
+  f19: {p05: 158.333553, median: 218.003944, p95: 248.724499, favorable: high}
+response:
+  intercept_mg_kg: 8.3
+  feed_center_mass_pct: 0.95
+  feed_coefficient: 15.0
+  p8_coefficient: -8.0
+  t11_coefficient: 5.0
+  f19_coefficient: -6.0
+  validation_q90_mg_kg: 2.219822
+  t95_offset_c: -8.0
+  cetane_gain: 2.0
+  selected_lag_minutes: {p8: 120, t11: 180, f19: 60, feed_sulfur: 180}
+candidate_step_fraction: 0.05
+max_candidates: 27
+additive:
+  min_supported_ppm: 200
+  max_supported_ppm: 3000
+  nominal_cetane_per_1000_ppm: 5.0
+  conservative_cetane_per_1000_ppm: 4.0
+  relative_cost_per_tonne: 100.0
