@@ -6,17 +6,25 @@ interface Props {
   snapshot: ProcessSnapshot;
   changes: Record<string, number>;
   disabled: boolean;
+  reviewIssues: string[];
   onChange: (signalId: string, value: number) => void;
   onReset: (signalId: string) => void;
 }
 
-export function ControlEditor({ controls, snapshot, changes, disabled, onChange, onReset }: Props) {
+export function ControlEditor({ controls, snapshot, changes, disabled, reviewIssues, onChange, onReset }: Props) {
   return (
     <section className="panel" aria-labelledby="controls-title">
       <div className="section-heading">
         <div><p className="eyebrow">Вариант оператора</p><h2 id="controls-title">Проверить своё действие</h2></div>
       </div>
-      <p className="muted">Значения задаются как новые абсолютные уставки. Редактирование ставит replay на паузу.</p>
+      <p className="muted">Значения задаются как новые абсолютные уставки. Редактирование ставит просмотр истории на паузу.</p>
+      {reviewIssues.length > 0 && (
+        <details className="operator-help">
+          <summary>Дополнительная информация для оператора</summary>
+          <strong>Ограничения доступных управлений</strong>
+          <ul>{reviewIssues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}</ul>
+        </details>
+      )}
       <div className="control-list">
         {controls.length === 0 && <div className="empty-state">Каталог управлений не получен.</div>}
         {controls.map((control) => {

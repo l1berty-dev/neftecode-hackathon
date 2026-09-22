@@ -29,7 +29,7 @@ export default function App({ api, fixtureMode = false, initialMode }: Props) {
     <>
       <nav className="mode-tabs" aria-label="Режим продукта">
         <button className={mode === "modelled" ? "active" : ""} onClick={() => setMode("modelled")}>Модельные сценарии</button>
-        <button className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>Исторический replay</button>
+        <button className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>Прошлые сценарии</button>
       </nav>
       {mode === "modelled" ? <ModelledDashboard api={api} /> : <HistoricalApp api={api} fixtureMode={fixtureMode} />}
     </>
@@ -316,14 +316,10 @@ export function HistoricalApp({ api, fixtureMode = false }: Props) {
     <>
       {fixtureMode && <FixtureBanner />}
       <header className="topbar">
-        <div>
-          <p className="eyebrow">Советчик оператору · только рекомендации</p>
-          <h1>Гидроочистка 24-2000</h1>
-        </div>
+        <h1>Operator Assistant</h1>
         <div className="replay-status">
-          <span className="live-dot" />
-          <div><strong>Replay · {running ? "идёт" : "пауза"}</strong><span>{episodeName ?? "эпизод не указан"} · {formatDate(snapshot.as_of)} МСК</span></div>
-          <button className="icon-button" onClick={() => setRunning((value) => !value)} disabled={editing || loading} aria-label={running ? "Поставить replay на паузу" : "Запустить replay"}>{running ? "Ⅱ" : "▶"}</button>
+          <div><strong>Просмотр истории · {running ? "идёт" : "пауза"}</strong><span>Последовательно показывает сохранённые снимки процесса</span><small>{episodeName ?? "эпизод не указан"} · {formatDate(snapshot.as_of)} МСК</small></div>
+          <button className="replay-toggle" onClick={() => setRunning((value) => !value)} disabled={editing || loading} aria-label={running ? "Поставить просмотр истории на паузу" : "Продолжить просмотр истории"}>{running ? "Пауза" : "Продолжить"}</button>
         </div>
       </header>
 
@@ -344,8 +340,9 @@ export function HistoricalApp({ api, fixtureMode = false }: Props) {
             </div>
             {decision ? (
               <>
-                <p className="decision-lead">{decision.preferred?.action.label ?? "Изменение не выбрано"}</p>
-                <ul className="reason-list">{decision.explanation.map((reason, index) => <li key={`${index}-${reason}`}>{reason}</li>)}</ul>
+                <p className="decision-lead">{decision.status === "change_recommended" && decision.preferred ? `Можно изменить: ${decision.preferred.action.label}` : decision.status === "no_change" ? "Сохранить текущие настройки" : "Изменять настройки нельзя"}</p>
+                <p className="decision-summary">{decision.explanation[0] ?? "Для этого снимка нет подтверждённого вывода."}</p>
+                <details className="decision-overview"><summary>Полный обзор решения</summary><ul className="reason-list">{decision.explanation.map((reason, index) => <li key={`${index}-${reason}`}>{reason}</li>)}</ul></details>
                 <div className="decision-actions">
                   <button onClick={save} disabled={saving || saved || stale}>{saving ? "Сохраняем…" : saved ? "Сохранено" : "Сохранить решение"}</button>
                   <span>ID {decision.decision_id.slice(0, 8)}</span>
@@ -379,13 +376,7 @@ export function HistoricalApp({ api, fixtureMode = false }: Props) {
           </div>
         </section>
 
-        <ControlEditor controls={controls} snapshot={snapshot} changes={changes} disabled={loading} onChange={updateChange} onReset={resetChange} />
-        {controlIssues.length > 0 && (
-          <div className="control-review" role="note">
-            <strong>Ограничения каталога управлений</strong>
-            <ul>{controlIssues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}</ul>
-          </div>
-        )}
+        <ControlEditor controls={controls} snapshot={snapshot} changes={changes} disabled={loading} reviewIssues={controlIssues} onChange={updateChange} onReset={resetChange} />
         {editing && (
           <div className="floating-compare">
             <span>{Object.keys(changes).length} измен. · снимок закреплён</span>
@@ -412,7 +403,7 @@ export function HistoricalApp({ api, fixtureMode = false }: Props) {
         {selectedEvaluation && <Details evaluation={selectedEvaluation} decision={decision} snapshot={snapshot} />}
 
         <section className="panel history-panel" aria-labelledby="history-title">
-          <div className="section-heading"><div><p className="eyebrow">Аудит</p><h2 id="history-title">Сохранённые решения</h2></div></div>
+          <div className="section-heading"><div><h2 id="history-title">Сохранённые решения</h2></div></div>
           {history.length === 0 ? <p className="empty-state">Сохранённых решений пока нет.</p> : (
             <div className="history-list">{history.map((item) => <button key={item.decision_id} onClick={() => void openSaved(item)}><span>{formatDate(item.created_at)}</span><strong>{statusText[item.status]}</strong><small>Открыть исходный снимок {item.snapshot_id.slice(0, 8)}</small></button>)}</div>
           )}
@@ -424,14 +415,22 @@ export function HistoricalApp({ api, fixtureMode = false }: Props) {
 }
 
 function Details({ evaluation, decision, snapshot }: { evaluation: ScenarioEvaluation; decision: Decision | null; snapshot: ProcessSnapshot }) {
+  const importantReasons = [
+    ...evaluation.checks.filter((check) => check.passed !== true).map((check) => check.message),
+    ...(!evaluation.reliability.transition_assessed ? ["Переход к новой уставке не оценён."] : []),
+  ].slice(0, 3);
   return (
     <section className="panel details-panel" aria-labelledby="details-title">
-      <div className="section-heading"><div><p className="eyebrow">Почему так</p><h2 id="details-title">Проверки и ограничения</h2></div></div>
-      <div className="detail-columns">
-        <div><h3>Жёсткие проверки</h3><ul className="check-list">{evaluation.checks.map((check) => <li key={check.code} className={check.passed === true ? "pass" : check.passed === false ? "fail" : "unknown"}><span>{check.passed === true ? "✓" : check.passed === false ? "×" : "?"}</span><div><strong>{check.message}</strong><small>{check.code} · факт {formatNumber(check.actual)} / предел {formatNumber(check.limit)} {check.unit ?? ""}</small></div></li>)}</ul></div>
-        <div><h3>Тяжесть режима</h3><p className="muted">Это не вероятность аварии и не ресурс катализатора.</p><ul className="factor-list">{evaluation.reliability.factors.map((factor) => <li key={factor.name}><strong>{factor.name}: {formatNumber(factor.contribution)}</strong><span>{factor.explanation}</span></li>)}</ul>{!evaluation.reliability.transition_assessed && <p className="warning-copy">Переход к новой уставке не оценён.</p>}</div>
-        <div><h3>Версии и след</h3><dl className="version-list"><div><dt>Данные</dt><dd>{snapshot.dataset_version}</dd></div><div><dt>Модель</dt><dd>{evaluation.model_version}</dd></div><div><dt>Ограничения</dt><dd>{evaluation.constraint_version}</dd></div></dl><ol className="trace-list">{decision?.trace.map((entry, index) => <li key={`${index}-${entry.role}-${entry.output_summary}`}><strong>{entry.role}</strong><span>{entry.output_summary}</span></li>)}</ol></div>
-      </div>
+      <div className="section-heading"><div><h2 id="details-title">Основные причины</h2></div></div>
+      {importantReasons.length > 0 ? <ul className="important-reasons">{importantReasons.map((reason, index) => <li key={`${index}-${reason}`}>{reason}</li>)}</ul> : <p className="muted">Критичных ограничений для выбранного варианта не найдено.</p>}
+      <details className="full-report">
+        <summary>Показать полный отчёт</summary>
+        <div className="detail-columns details-content">
+          <div><h3>Жёсткие проверки</h3><ul className="check-list">{evaluation.checks.map((check) => <li key={check.code} className={check.passed === true ? "pass" : check.passed === false ? "fail" : "unknown"}><span>{check.passed === true ? "✓" : check.passed === false ? "×" : "?"}</span><div><strong>{check.message}</strong><small>{check.code} · факт {formatNumber(check.actual)} / предел {formatNumber(check.limit)} {check.unit ?? ""}</small></div></li>)}</ul></div>
+          <div><h3>Тяжесть режима</h3><p className="muted">Это не вероятность аварии и не ресурс катализатора.</p><ul className="factor-list">{evaluation.reliability.factors.map((factor) => <li key={factor.name}><strong>{factor.name}: {formatNumber(factor.contribution)}</strong><span>{factor.explanation}</span></li>)}</ul>{!evaluation.reliability.transition_assessed && <p className="warning-copy">Переход к новой уставке не оценён.</p>}</div>
+          <div><h3>Версии и след</h3><dl className="version-list"><div><dt>Данные</dt><dd>{snapshot.dataset_version}</dd></div><div><dt>Модель</dt><dd>{evaluation.model_version}</dd></div><div><dt>Ограничения</dt><dd>{evaluation.constraint_version}</dd></div></dl><ol className="trace-list">{decision?.trace.map((entry, index) => <li key={`${index}-${entry.role}-${entry.output_summary}`}><strong>{entry.role}</strong><span>{entry.output_summary}</span></li>)}</ol></div>
+        </div>
+      </details>
     </section>
   );
 }

@@ -95,4 +95,27 @@ describe("ModelledDashboard", () => {
     expect(await screen.findByText("Расчёт выполнен для текущих параметров.")).toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+
+  it("shows only the latest run for each scenario", async () => {
+    const api = {
+      modelledPresets: vi.fn(async () => ({ items: [preset] })),
+      modelledRuns: vi.fn(async () => ({
+        items: [
+          { run_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", status: "no_change", preset_id: "stable_k5" },
+          { run_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", status: "no_feasible_option", preset_id: "stable_k5" },
+          { run_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", status: "change_recommended", preset_id: "feed_sulfur_rise" },
+        ],
+      })),
+      modelledRun: vi.fn(),
+      createModelledRun: vi.fn(),
+    } as unknown as Api;
+    render(<ModelledDashboard api={api} />);
+
+    expect(await screen.findByRole("heading", { name: "Operator Assistant" })).toBeInTheDocument();
+    expect(screen.queryByText("Советчик, не управление")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Эффекты управлений экспериментальные/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("stable_k5")).toHaveLength(1);
+    expect(screen.getByText("feed_sulfur_rise")).toBeInTheDocument();
+    expect(screen.getByText("Решение требует взгляда специалиста перед изменениями характеристик")).toBeInTheDocument();
+  });
 });

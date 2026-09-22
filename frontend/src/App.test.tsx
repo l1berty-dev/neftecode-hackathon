@@ -24,6 +24,14 @@ describe("App", () => {
 
     expect(screen.getByText(/DEMO FIXTURE/)).toBeInTheDocument();
     const button = await screen.findByRole("button", { name: "Сохранить решение" });
+    expect(screen.getByRole("heading", { name: "Operator Assistant" })).toBeInTheDocument();
+    expect(screen.getByText(/Последовательно показывает сохранённые снимки процесса/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Продолжить просмотр истории" })).toHaveTextContent("Продолжить");
+    const overview = screen.getByText("Полный обзор решения").closest("details");
+    expect(overview).not.toHaveAttribute("open");
+    expect(screen.getByRole("heading", { name: "Основные причины" })).toBeInTheDocument();
+    const technicalOverview = screen.getByText("Показать полный отчёт").closest("details");
+    expect(technicalOverview).not.toHaveAttribute("open");
     await user.click(button);
 
     await waitFor(() => expect(save).toHaveBeenCalledWith("44444444-4444-4444-8444-444444444444"));
@@ -104,7 +112,7 @@ describe("App", () => {
           source: "test",
         },
       ],
-      review_issues: [],
+      review_issues: ["Тестовое ограничение каталога."],
     });
     const evaluation = sample.decision.preferred ?? sample.decision.baseline;
     const evaluate = vi.spyOn(api, "evaluate").mockResolvedValue({
@@ -116,6 +124,9 @@ describe("App", () => {
     render(<App api={api} initialMode="replay" />);
 
     const originalDecision = await screen.findByText("Рекомендуется изменение");
+    const operatorHelp = screen.getByText("Дополнительная информация для оператора").closest("details");
+    expect(operatorHelp).not.toHaveAttribute("open");
+    expect(screen.getByText("Тестовое ограничение каталога.")).toBeInTheDocument();
     const input = await screen.findByRole("spinbutton", { name: /Новое значение/ });
     fireEvent.change(input, { target: { value: "251" } });
     await user.click(screen.getByRole("button", { name: "Только проверить" }));

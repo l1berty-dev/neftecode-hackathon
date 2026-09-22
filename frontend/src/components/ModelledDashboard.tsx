@@ -46,6 +46,15 @@ export function ModelledDashboard({ api }: Props) {
   }, [api]);
 
   const preset = useMemo(() => presets.find((item) => item.preset_id === selected), [presets, selected]);
+  const visibleHistory = useMemo(() => {
+    const seen = new Set<string>();
+    return history.filter((item) => {
+      const key = item.preset_id ?? "custom";
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 5);
+  }, [history]);
   const choosePreset = (id: string) => {
     const next = presets.find((item) => item.preset_id === id);
     setSelected(id);
@@ -83,10 +92,7 @@ export function ModelledDashboard({ api }: Props) {
   if (busy && !request) return <main className="boot-state"><p>Загрузка модельного контура…</p></main>;
 
   return <>
-    <header className="topbar modelled-topbar">
-      <div><p className="eyebrow">Явно модельный what-if · горизонт 180 минут</p><h1>АВТ → гидроочистка → блендинг</h1></div>
-      <div className="model-badge"><span className="live-dot"/><div><strong>Советчик, не управление</strong><small>Сырые шкалы P8 / T11 / F19</small></div></div>
-    </header>
+    <header className="topbar modelled-topbar"><h1>Operator Assistant</h1></header>
     <main className="shell">
       {error && <div className="error-notice" role="alert">{error}</div>}
       <section className="panel preset-panel">
@@ -106,7 +112,6 @@ export function ModelledDashboard({ api }: Props) {
           <Field label="P8, сырая шкала" value={request.controls.p8} onChange={(v) => patch((d) => { if (v != null) d.controls.p8 = v; })}/>
           <Field label="T11, сырая шкала" value={request.controls.t11} onChange={(v) => patch((d) => { if (v != null) d.controls.t11 = v; })}/>
           <Field label="F19, сырая шкала" value={request.controls.f19} onChange={(v) => patch((d) => { if (v != null) d.controls.f19 = v; })}/>
-          <p className="warning-copy">Эффекты управлений экспериментальные: историческая модель не доказала причинный отклик.</p>
         </article>
         <article className="panel input-card"><p className="step-number">03</p><h2>Спецификация</h2>
           <Field label="Сера, не более мг/кг" value={request.specification.sulfur_max_mg_kg} onChange={(v) => patch((d) => { if (v != null) d.specification.sulfur_max_mg_kg = v; })}/>
@@ -137,7 +142,7 @@ export function ModelledDashboard({ api }: Props) {
         <details className="panel technical-details"><summary>Допущения, проверки и trace</summary><h3>Ограничения модели</h3><ul>{result.assumptions.map((item, i) => <li key={`${i}-${item}`}>{item}</li>)}</ul><h3>Обязательные проверки</h3><ul>{result.hard_checks.map((item) => <li key={item.code}>{item.passed ? "✓" : item.passed === false ? "✕" : "?"} {item.message} ({item.code})</li>)}</ul><h3>Trace</h3><ol>{result.trace.map((item, i) => <li key={`${i}-${item}`}>{item}</li>)}</ol></details>
       </section>}
 
-      <section className="panel history-panel"><div className="section-heading"><div><p className="eyebrow">PostgreSQL</p><h2>История модельных запусков</h2></div></div>{history.length ? <div className="history-list">{history.map((item) => <button key={item.run_id} onClick={() => api.modelledRun(item.run_id).then((response) => {
+      <section className="panel history-panel"><div className="section-heading"><div><h2>История модельных запусков</h2></div></div>{visibleHistory.length ? <div className="history-list">{visibleHistory.map((item) => <button key={item.run_id} onClick={() => api.modelledRun(item.run_id).then((response) => {
         setResult(response.result);
         setRequest(structuredClone(response.result.request));
         if (response.result.request.preset_id) setSelected(response.result.request.preset_id);
@@ -145,7 +150,7 @@ export function ModelledDashboard({ api }: Props) {
         setError(null);
       }).catch((reason: Error) => setError(reason.message))}><strong>{statusText[item.status]}</strong><span>{item.preset_id ?? "без пресета"}</span><small>{item.run_id.slice(0, 8)}</small></button>)}</div> : <p className="empty-state">Запусков пока нет.</p>}</section>
     </main>
-    <footer>MODELLED WHAT-IF · результат требует инженерной верификации перед любым применением</footer>
+    <footer>Решение требует взгляда специалиста перед изменениями характеристик</footer>
   </>;
 }
 
