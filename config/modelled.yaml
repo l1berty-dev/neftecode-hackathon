@@ -1,0 +1,21 @@
+model_version: "modelled-response-v1-20260922"
+constraint_version: "modelled-constraints-v1-20260922"
+horizon_minutes: 180
+controls:
+  p8: {minimum: 0.0072585672, maximum: 0.2113194905, step: 0.02, reference: 0.1569026038}
+  t11: {minimum: 5.4604476547, maximum: 383.4743414307, step: 5.0, reference: 362.8803405762}
+  f19: {minimum: -0.0981177086, maximum: 307.0, step: 5.0, reference: 212.0400161743}
+response:
+  feed_sulfur_factor: 25.0
+  feed_t95_factor: 0.02
+  p8_factor: -80.0
+  t11_factor: 0.015
+  f19_factor: -0.008
+  interval_half_width_mg_kg: 1.5
+  meaningful_improvement_mg_kg: 0.25
+blending:
+  grid_step: 0.05
+  additive_max_ppm: 30000.0
+  cetane_gain_per_1000_ppm: 0.12
+  conservative_gain_fraction: 0.65
+  additive_relative_cost: 100.0

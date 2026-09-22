@@ -1,5 +1,28 @@
 # Handoff 2 — сценарии, надёжность, PostgreSQL и React
 
+## Восстановление недостающей реализации — 2026-09-22
+
+После интеграции коммита `3e795a6` обнаружено, что документация и импорты уже
+описывали финальный modelled-контур, но сами `modelled/`, dashboard, Alembic 0002 и
+Docker-сборка в Git отсутствовали. Разрыв устранён без изменения fail-closed
+семантики historical replay.
+
+- Добавлены исправленные ВАК, modelled response audit, единый full-chain engine,
+  hard checks, blending grid 5% и пять редактируемых пресетов.
+- Добавлены `ModelledDashboard`, синхронизированные OpenAPI-типы, HTTP E2E,
+  отдельное immutable-хранилище modelled runs и миграция `0002`.
+- Compose теперь выполняет prepare/train/modelled-train, миграции, запускает API и
+  nginx на `127.0.0.1:8080`; чистый bootstrap реально выполнен.
+- Добавлены `docs/MODELLED_CHAIN.md`, `docs/RESULTS.md` и проверенные материалы
+  защиты в `docs/presentation/`.
+- Фактическая приёмка: 188 Python tests + 6 отдельных PostgreSQL tests, 13 frontend
+  tests, contract drift/typecheck/build, пять пресетов через живой HTTP. Bootstrap
+  подготовил 18 354 049 telemetry rows; миграция БД находится на `0002`.
+
+Контейнеры оставлены запущенными и healthy. Локальный сбой Docker Desktop был вызван
+stale socket Secrets Engine и затем нулём свободного места, а не кодом продукта;
+socket-каталог сохранён как восстановимая резервная копия.
+
 ## Актуализация финальной сдачи — 2026-09-22
 
 Эта секция заменяет прежнюю границу «блендинг вне v1». По прямому решению команды

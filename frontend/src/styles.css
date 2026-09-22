@@ -51,6 +51,10 @@ h1, h2, h3, p { margin-top: 0; }
 .preset-panel label, .field { display: grid; gap: 6px; color: var(--muted); font-size: 10px; }
 .preset-panel select, .field input, .field select { width: 100%; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--ink); padding: 9px 10px; }
 .model-input-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+.modelled-recalculate { position: sticky; bottom: 16px; z-index: 4; margin: 0 auto 18px; max-width: 760px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 16px 14px 20px; border: 1px solid rgb(157 232 202 / 28%); border-radius: 15px; color: white; background: #10241d; box-shadow: 0 16px 50px rgb(0 0 0 / 25%); }
+.modelled-recalculate div { display: grid; gap: 3px; }
+.modelled-recalculate strong { font-size: 12px; }
+.modelled-recalculate span { color: #a9bdb6; font-size: 10px; line-height: 1.4; }
 .input-card { display: flex; flex-direction: column; gap: 10px; box-shadow: 0 12px 30px rgb(24 55 45 / 5%); }
 .input-card h2 { margin-bottom: 5px; }
 .input-card h3 { margin: 12px 0 0; font-size: 12px; }
@@ -212,6 +216,7 @@ footer { background: #081712; color: #78968b; text-align: center; padding: 25px;
   .mode-tabs button { flex: 1; padding-inline: 8px; }
   .preset-panel, .model-input-grid, .model-comparison { grid-template-columns: 1fr; }
   .tanks-card { grid-column: auto; }
+  .modelled-recalculate { align-items: stretch; flex-direction: column; bottom: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
